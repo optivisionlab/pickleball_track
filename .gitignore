@@ -2,7 +2,9 @@
 __pycache__/
 *.py[codz]
 *$py.class
-
+sam3/sam3-inference
+sam3/sam3.pt
+local-annything
 # C extensions
 *.so
 
