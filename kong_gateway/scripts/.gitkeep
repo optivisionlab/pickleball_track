@@ -1,0 +1,4 @@
+# Thư mục chứa các script tự động hóa (PowerShell & Bash):
+# - generate-certs: Sinh chứng chỉ mTLS cho cluster CP/DP
+# - init-kong-configs: Khởi tạo routes, services, plugins qua Admin API
+# - test-hybrid-flow: Kiểm thử tự động

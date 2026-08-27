@@ -1,0 +1,2 @@
+# Thư mục lưu trữ chứng chỉ mTLS (cluster.crt, cluster.key)
+# Được sinh bởi script scripts/generate-certs.ps1 hoặc openssl.

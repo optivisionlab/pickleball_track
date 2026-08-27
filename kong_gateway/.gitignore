@@ -1,0 +1,15 @@
+# Ignore sensitive certificates and keys
+certs/*.crt
+certs/*.key
+certs/*.pem
+!certs/.gitkeep
+
+# Ignore local environment variables
+.env
+
+# Ignore documentation
+docs/
+
+# Ignore PostgreSQL data if mapped to local directory
+postgres-data/
+*.log

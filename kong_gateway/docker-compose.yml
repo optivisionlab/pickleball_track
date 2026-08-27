@@ -1,0 +1,136 @@
+networks:
+  kong-net:
+    driver: bridge
+
+volumes:
+  kong_data:
+    driver: local
+
+services:
+  # ============================================================================
+  # 1. DATABASE POSTGRESQL (Lưu trữ cấu hình cho Control Plane)
+  # ============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: kong-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kong}
+      POSTGRES_USER: ${POSTGRES_USER:-kong}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kongpass_secure_local}
+    volumes:
+      - kong_data:/var/lib/postgresql/data
+    networks:
+      - kong-net
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-kong}", "-d", "${POSTGRES_DB:-kong}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # 2. KONG MIGRATIONS (Khởi tạo Schema DB - Chạy 1 lần rồi thoát)
+  # ============================================================================
+  kong-migrations:
+    image: ${KONG_IMAGE:-kong:3.8}
+    container_name: kong-migrations
+    command: kong migrations bootstrap
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: postgres
+      KONG_PG_DATABASE: ${POSTGRES_DB:-kong}
+      KONG_PG_USER: ${POSTGRES_USER:-kong}
+      KONG_PG_PASSWORD: ${POSTGRES_PASSWORD:-kongpass_secure_local}
+    networks:
+      - kong-net
+    restart: on-failure
+
+  # ============================================================================
+  # 3. KONG CONTROL PLANE (CP)
+  # Quản trị hệ thống: Web UI (:8002), Admin API (:8001), Đồng bộ mTLS (:8005)
+  # ============================================================================
+  kong-cp:
+    image: ${KONG_IMAGE:-kong:3.8}
+    container_name: kong-cp
+    restart: always
+    depends_on:
+      kong-migrations:
+        condition: service_completed_successfully
+    volumes:
+      - ./certs:/etc/kong/certs:ro
+    environment:
+      KONG_ROLE: control_plane
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: postgres
+      KONG_PG_DATABASE: ${POSTGRES_DB:-kong}
+      KONG_PG_USER: ${POSTGRES_USER:-kong}
+      KONG_PG_PASSWORD: ${POSTGRES_PASSWORD:-kongpass_secure_local}
+
+      # Tắt Proxy trên CP để bảo mật
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_PROXY_LISTEN: "off"
+
+      # Admin API & Kong Manager UI
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_ADMIN_GUI_LISTEN: 0.0.0.0:8002
+      KONG_ADMIN_GUI_URL: ${KONG_ADMIN_GUI_URL:-http://localhost:8002}
+
+      # Kênh Cluster đồng bộ mTLS gRPC
+      KONG_CLUSTER_LISTEN: 0.0.0.0:8005
+      KONG_CLUSTER_TELEMETRY_LISTEN: 0.0.0.0:8006
+      KONG_CLUSTER_MTLS: shared
+      KONG_CLUSTER_CERT: /etc/kong/certs/cluster.crt
+      KONG_CLUSTER_CERT_KEY: /etc/kong/certs/cluster.key
+    ports:
+      - "${KONG_CP_ADMIN_PORT:-8001}:8001"   # Admin API
+      - "${KONG_CP_GUI_PORT:-8002}:8002"     # Kong Manager UI
+      - "${KONG_CP_CLUSTER_PORT:-8005}:8005" # Cluster gRPC mTLS
+    networks:
+      - kong-net
+
+  # ============================================================================
+  # 4. KONG DATA PLANE (DP)
+  # Tiếp nhận traffic người dùng (Proxy :8000), chạy DB-less 100%
+  # ============================================================================
+  kong-dp:
+    image: ${KONG_IMAGE:-kong:3.8}
+    container_name: kong-dp
+    restart: always
+    depends_on:
+      - kong-cp
+    volumes:
+      - ./certs:/etc/kong/certs:ro
+    environment:
+      KONG_ROLE: data_plane
+      KONG_DATABASE: "off"
+
+      # Kết nối đồng bộ tới Control Plane
+      KONG_CLUSTER_CONTROL_PLANE: kong-cp:8005
+      KONG_CLUSTER_TELEMETRY_ENDPOINT: kong-cp:8006
+      KONG_CLUSTER_MTLS: shared
+      KONG_CLUSTER_CERT: /etc/kong/certs/cluster.crt
+      KONG_CLUSTER_CERT_KEY: /etc/kong/certs/cluster.key
+
+      # Mở Proxy lắng nghe traffic
+      KONG_PROXY_LISTEN: 0.0.0.0:8000, 0.0.0.0:8443 ssl
+      KONG_ADMIN_LISTEN: "off"
+    ports:
+      - "${KONG_DP_PROXY_PORT:-8000}:8000"     # Proxy HTTP
+      - "${KONG_DP_PROXY_SSL_PORT:-8443}:8443" # Proxy HTTPS
+    networks:
+      - kong-net
+
+  # ============================================================================
+  # 5. BACKEND MICROSERVICES (Thêm các service backend thực tế của bạn tại đây)
+  # ============================================================================
+  # vi-du-backend-service:
+  #   image: my-app:latest
+  #   container_name: my-backend-service
+  #   networks:
+  #     - kong-net
