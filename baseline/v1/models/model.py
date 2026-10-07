@@ -2,23 +2,11 @@ import torch
 import torch.nn as nn
 
 
-def get_hidden_dim(model):
-    cfg = getattr(model, "config", None) or getattr(model, "cfg", None)
-    cfg_attrs = ["hidden_size", "d_model", "dim", "encoder_embed_dim", "encoder_dim", "embed_dim", "embed"]
-    if cfg is not None:
-        for attr in cfg_attrs:
-            if hasattr(cfg, attr):
-                return getattr(cfg, attr)
-    for attr in cfg_attrs:
-        if hasattr(model, attr):
-            return getattr(model, attr)
-    raise RuntimeError("Cannot infer hidden dimension.")
-
 class VideoEncoder(nn.Module):
     def __init__(self, model):
         super().__init__()
         self.model = model
-
+        
     def forward(self, video):
         return self.model(pixel_values=video).last_hidden_state
 
@@ -28,14 +16,8 @@ class AudioEncoder(nn.Module):
         self.model = model
 
     def forward(self, audio, padding_mask):
-        feat = self.model.extract_features(audio, padding_mask=padding_mask)
-        if isinstance(feat, tuple):
-            feat, padding_mask = feat
-        elif isinstance(feat, list):
-            feat = feat[-1]
-        if isinstance(feat, list):
-            feat = feat[-1]
-        return feat, padding_mask
+        feat, mask = self.model.extract_features(audio, padding_mask=padding_mask)
+        return feat, mask
 
 class Projection(nn.Module):
     def __init__(self, in_dim, out_dim=768): 
@@ -86,14 +68,12 @@ class ClassificationHead(nn.Module):
         return self.mlp(x.squeeze(-1))
 
 class AVModel(nn.Module):
-    def __init__(self,video_model,audio_model,fusion_dim=768):
+    def __init__(self,video_model, audio_model, fusion_dim=768):
         super().__init__()
         self.video_encoder = VideoEncoder(video_model)
-        self.audio_encoder=AudioEncoder(audio_model)
-        video_dim=get_hidden_dim(video_model)
-        audio_dim=get_hidden_dim(audio_model)
-        self.video_proj=Projection(video_dim, fusion_dim)
-        self.audio_proj=Projection(audio_dim, fusion_dim)
+        self.audio_encoder= AudioEncoder(audio_model)
+        self.video_proj=Projection(768, fusion_dim)
+        self.audio_proj=Projection(768, fusion_dim)
         self.fusion=CrossAttentionFusion(dim=fusion_dim, heads=16)
         self.head=ClassificationHead(fusion_dim)
         
@@ -102,7 +82,7 @@ class AVModel(nn.Module):
         audio = batch["audio"]
         audio_mask = batch["audio_mask"]
         video_feat = self.video_encoder(video)
-        audio_feat, audio_padding_mask = self.audio_encoder(audio, audio_mask)
+        audio_feat, audio_padding_mask = self.audio_encoder(audio, audio_mask) #
         video_feat = self.video_proj(video_feat)
         audio_feat = self.audio_proj(audio_feat)
         fused = self.fusion(video_feat, audio_feat, audio_padding_mask)

@@ -1,0 +1,5 @@
+ffmpeg==5.1.2
+torch==2.11.0+cu128 
+torchaudio==2.11.0+cu128 
+torchcodec==0.12.0       
+torchvision==0.26.0+cu128 

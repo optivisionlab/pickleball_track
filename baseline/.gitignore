@@ -5,3 +5,5 @@ weights/
 *.safetensors
 __pycache__/
 *.pyc
+unilm/
+docker/
