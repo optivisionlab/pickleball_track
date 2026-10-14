@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
@@ -29,6 +31,11 @@ from config import (
 
 ID2LABEL = {v: k for k, v in LABEL2ID.items()}
 EVENT_LABELS = {"hit", "miss"}
+BENCHMARK_TEXT_BY_LABEL = {
+    "hit": "A basketball shot goes into the hoop.",
+    "miss": "A basketball shot misses the hoop.",
+    "no_event": "A basketball game with no shot attempt.",
+}
 
 
 @dataclass(frozen=True)
@@ -499,3 +506,213 @@ def feature_collate_fn(batch: List[dict]) -> dict:
         "temporal_padding_mask": mask,
         "user": [x["user"] for x in batch],
     }
+
+
+@dataclass(frozen=True)
+class BenchmarkClip:
+    path: Path
+    video_id: str
+    numeric_id: int
+    label: int
+    fps: float
+    num_frames: int
+
+
+@dataclass(frozen=True)
+class BenchmarkWindow:
+    clip_index: int
+    start_frame: int
+
+
+def benchmark_video_number(value: str) -> int:
+    match = re.fullmatch(r"video(\d+)", value.strip(), re.IGNORECASE)
+    if match is None:
+        raise ValueError(f"Invalid video_id {value!r}; expected video123.")
+    return int(match.group(1))
+
+
+def read_benchmark_labels(path: str | Path) -> Dict[int, Tuple[str, int]]:
+    labels: Dict[int, Tuple[str, int]] = {}
+    with Path(path).open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        required = {"video_id", "label"}
+        if reader.fieldnames is None or not required.issubset(reader.fieldnames):
+            raise ValueError(f"CSV requires columns {sorted(required)}.")
+        for row_number, row in enumerate(reader, start=2):
+            video_id = (row.get("video_id") or "").strip()
+            label_name = (row.get("label") or "").strip().lower()
+            if not video_id or not label_name:
+                continue
+            if label_name not in LABEL2ID:
+                raise ValueError(
+                    f"Unknown label {label_name!r} at CSV row {row_number}; "
+                    f"expected {sorted(LABEL2ID)}."
+                )
+            number = benchmark_video_number(video_id)
+            label = LABEL2ID[label_name]
+            if number in labels and labels[number][1] != label:
+                raise ValueError(f"Conflicting labels for {video_id}.")
+            labels[number] = (video_id, label)
+    if not labels:
+        raise RuntimeError(f"No labeled video rows found in {path}.")
+    return labels
+
+
+class BenchmarkDataset(Dataset):
+    """Labeled clip windows and cached VideoMAE/CLIP features for v5."""
+
+    def __init__(
+        self,
+        video_dir: str | Path,
+        labels_csv: str | Path,
+        cache_dir: str | Path,
+        videomae_name: str,
+        clip_name: str,
+    ):
+        video_dir = Path(video_dir)
+        labels_csv = Path(labels_csv)
+        self.cache_dir = Path(cache_dir)
+        if not video_dir.is_dir():
+            raise FileNotFoundError(video_dir)
+        if not labels_csv.is_file():
+            raise FileNotFoundError(labels_csv)
+
+        label_map = read_benchmark_labels(labels_csv)
+        self.clips: List[BenchmarkClip] = []
+        matched_ids = set()
+        extensions = {".mp4", ".mov", ".mkv", ".avi"}
+        for path in sorted(video_dir.rglob("*")):
+            if not path.is_file() or path.suffix.lower() not in extensions:
+                continue
+            match = re.search(r"-(\d+)$", path.stem)
+            if match is None or int(match.group(1)) not in label_map:
+                continue
+            number = int(match.group(1))
+            video_id, label = label_map[number]
+            cap = cv2.VideoCapture(str(path))
+            if not cap.isOpened():
+                raise RuntimeError(f"Cannot open video: {path}")
+            fps = float(cap.get(cv2.CAP_PROP_FPS))
+            frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            cap.release()
+            if fps <= 0 or frame_count <= 0:
+                raise RuntimeError(f"Invalid video metadata: {path}")
+            self.clips.append(
+                BenchmarkClip(path, video_id, number, label, fps, frame_count)
+            )
+            matched_ids.add(number)
+        if not self.clips:
+            raise RuntimeError(f"No labeled videos matched under {video_dir}.")
+
+        stride = max(1, round(NUM_VIDEO_FRAMES * (1.0 - DEFAULT_OVERLAP)))
+        self.windows: List[BenchmarkWindow] = []
+        for clip_index, clip in enumerate(self.clips):
+            starts = [0] if clip.num_frames <= NUM_VIDEO_FRAMES else list(
+                range(0, clip.num_frames - NUM_VIDEO_FRAMES + 1, stride)
+            )
+            last = max(0, clip.num_frames - NUM_VIDEO_FRAMES)
+            if starts[-1] != last:
+                starts.append(last)
+            self.windows.extend(
+                BenchmarkWindow(clip_index, start) for start in starts
+            )
+
+        missing = sorted(set(label_map) - matched_ids)
+        if missing:
+            print(f"[WARNING] {len(missing)} labeled IDs have no matching video.")
+        self.cache_identity = f"v5-benchmark-2|{videomae_name}|{clip_name}"
+        self.transform = transforms.Compose([
+            transforms.Resize((DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE)),
+            transforms.ToTensor(),
+            transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
+        ])
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        print(
+            f"Matched {len(self.clips)} video files / {len(matched_ids)} IDs; "
+            f"windows={len(self.windows)}."
+        )
+
+    def __len__(self) -> int:
+        return len(self.windows)
+
+    def metadata(self, index: int) -> dict:
+        window = self.windows[index]
+        clip = self.clips[window.clip_index]
+        valid_frames = min(
+            NUM_VIDEO_FRAMES,
+            clip.num_frames - window.start_frame,
+        )
+        frames_per_token = NUM_VIDEO_FRAMES // NUM_TEMPORAL_TOKENS
+        valid_tokens = (valid_frames + frames_per_token - 1) // frames_per_token
+        temporal_mask = torch.ones(NUM_TEMPORAL_TOKENS, dtype=torch.bool)
+        temporal_mask[:valid_tokens] = False
+        labels = torch.full((NUM_TEMPORAL_TOKENS,), clip.label, dtype=torch.long)
+        labels[temporal_mask] = LABEL2ID["no_event"]
+        text = BENCHMARK_TEXT_BY_LABEL[ID2LABEL[clip.label]]
+        stat = clip.path.stat()
+        payload = (
+            f"{self.cache_identity}|{clip.path.resolve()}|{stat.st_size}|"
+            f"{stat.st_mtime_ns}|{window.start_frame}|{clip.label}|"
+            f"{NUM_VIDEO_FRAMES}|{DEFAULT_IMAGE_SIZE}|{DEFAULT_OVERLAP}|"
+            f"{IMAGENET_MEAN}|{IMAGENET_STD}"
+        )
+        return {
+            "cache_key": hashlib.sha256(payload.encode()).hexdigest(),
+            "video_index": window.clip_index,
+            "start_frame": window.start_frame,
+            "end_frame": min(window.start_frame + NUM_VIDEO_FRAMES, clip.num_frames),
+            "labels": labels,
+            "temporal_padding_mask": temporal_mask,
+            "video_id": str(clip.path),
+            "user": clip.video_id,
+            "text": text,
+        }
+
+    def cache_path(self, index: int) -> Path:
+        return self.cache_dir / f"{index:08d}.pt"
+
+    def cache_for_update(self, index: int) -> dict:
+        meta = self.metadata(index)
+        path = self.cache_path(index)
+        if path.exists():
+            try:
+                item = torch.load(path, map_location="cpu", weights_only=True)
+                if item.get("cache_key") == meta["cache_key"]:
+                    return item
+            except Exception:
+                pass
+        return {**meta, "video_features": None, "text_features": None}
+
+    def load_cache(self, index: int) -> dict:
+        path = self.cache_path(index)
+        if not path.is_file():
+            raise FileNotFoundError(f"Missing feature cache: {path}")
+        item = torch.load(path, map_location="cpu", weights_only=True)
+        if item.get("cache_key") != self.metadata(index)["cache_key"]:
+            raise RuntimeError(f"Stale cache at {path}; rerun without --skip-precompute.")
+        return item
+
+    def __getitem__(self, index: int) -> dict:
+        return self.load_cache(index)
+
+    def decode(self, index: int) -> torch.Tensor:
+        window = self.windows[index]
+        clip = self.clips[window.clip_index]
+        cap = cv2.VideoCapture(str(clip.path))
+        if not cap.isOpened():
+            raise RuntimeError(f"Cannot open video: {clip.path}")
+        cap.set(cv2.CAP_PROP_POS_FRAMES, window.start_frame)
+        frames = []
+        last = None
+        for _ in range(NUM_VIDEO_FRAMES):
+            ok, frame = cap.read()
+            if ok:
+                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                last = self.transform(Image.fromarray(rgb))
+                frames.append(last)
+            elif last is not None:
+                frames.append(last.clone())
+            else:
+                frames.append(self.transform(Image.new("RGB", (DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE))))
+        cap.release()
+        return torch.stack(frames).permute(1, 0, 2, 3).contiguous()

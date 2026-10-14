@@ -356,6 +356,7 @@ def parse_args():
 	parser.add_argument("--weight-decay", type=float, default=WEIGHT_DECAY)
 	parser.add_argument("--focal-gamma", type=float, default=2.0)
 	parser.add_argument("--seed", type=int, default=SEED)
+	parser.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
 	parser.add_argument("--no-amp", action="store_true")
 	parser.add_argument("--skip-precompute", action="store_true")
 	parser.add_argument("--rebuild-cache", action="store_true")
@@ -370,7 +371,20 @@ def main() -> None:
 	if not 0 < args.val_ratio < 1:
 		raise ValueError("--val-ratio must be between 0 and 1.")
 	seed_everything(args.seed)
-	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+	if args.device == "cuda" and not torch.cuda.is_available():
+		raise RuntimeError(
+			"CUDA was requested but is unavailable. Run with a CUDA-enabled PyTorch "
+			"environment, or pass --device cpu to explicitly use the CPU."
+		)
+	device = torch.device(args.device)
+	if device.type == "cuda":
+		free_bytes, total_bytes = torch.cuda.mem_get_info(device)
+		print(
+			f"[DEVICE] {torch.cuda.get_device_name(device)} | "
+			f"VRAM free={free_bytes / 2**30:.1f}/{total_bytes / 2**30:.1f} GiB"
+		)
+	else:
+		print("[DEVICE] CPU (explicitly selected)")
 	use_amp = device.type == "cuda" and not args.no_amp
 	cache_dir = Path(args.cache_dir)
 	if args.rebuild_cache and cache_dir.exists():
