@@ -151,6 +151,11 @@ activemq-data/
 .env
 .envrc
 .venv
+src/weights/*.pt
+src/weights/**/*.pt
+src/weights/**/*.safetensors
+src/weights/**/*.bin
+vendor/unilm/
 env/
 venv/
 ENV/

@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pickleball-track"
+version = "1.0.0"
+description = "Pickleball video inference API"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110,<1.0",
+    "minio>=7.2,<8.0",
+    "numpy>=1.26",
+    "opencv-python-headless>=4.9",
+    "Pillow>=10.0",
+    "python-dotenv>=1.0,<2.0",
+    "pydantic>=2.6,<3.0",
+    "torch>=2.2",
+    "torchvision>=0.17",
+    "transformers>=4.40,<5.0",
+    "uvicorn[standard]>=0.27",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

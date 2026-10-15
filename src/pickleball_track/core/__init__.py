@@ -1,0 +1,1 @@
+"""Runtime configuration and shared application primitives."""
