@@ -28,6 +28,10 @@ DEFAULT_VIDEOMAE = os.getenv(
     "PICKLEBALL_VIDEOMAE",
     str(WEIGHTS_DIR / "videomae-base"),
 )
+MODEL_DEVICE = os.getenv("PICKLEBALL_DEVICE", "auto").strip().lower()
+MAX_VIDEO_BYTES = int(os.getenv("PICKLEBALL_MAX_VIDEO_BYTES", str(512 * 1024 * 1024)))
+if MAX_VIDEO_BYTES <= 0:
+    raise ValueError("PICKLEBALL_MAX_VIDEO_BYTES must be a positive integer")
 
 
 AUDIO_SR = 16000
