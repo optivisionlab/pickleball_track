@@ -1,17 +1,33 @@
-"""Video and audio decoding and feature preparation for the trained model."""
+"""Video/audio decoding and sliding-window preparation matching training."""
+
+from __future__ import annotations
 
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 
 import cv2
 import numpy as np
 import torch
-from transformers import VideoMAEImageProcessor, VideoMAEModel
+from transformers import VideoMAEImageProcessor
 
-from ..core.config import AUDIO_SR, NUM_VIDEO_FRAMES
+from ..core.config import AUDIO_SR, OVERLAP
+from .resample import resample
 
 
-def get_video_info(video_path: str | Path) -> dict[str, float | int]:
+@dataclass(frozen=True)
+class VideoInfo:
+    fps: float
+    num_frames: int
+    width: int
+    height: int
+
+    @property
+    def duration(self) -> float:
+        return self.num_frames / self.fps
+
+
+def get_video_info(video_path: str | Path) -> VideoInfo:
     capture = cv2.VideoCapture(str(video_path))
     if not capture.isOpened():
         raise RuntimeError(f"Cannot open video: {video_path}")
@@ -24,13 +40,20 @@ def get_video_info(video_path: str | Path) -> dict[str, float | int]:
 
     if fps <= 0:
         raise RuntimeError(f"Invalid FPS: {fps}")
-    return {
-        "fps": fps,
-        "num_frames": num_frames,
-        "width": width,
-        "height": height,
-        "duration": num_frames / fps,
-    }
+    return VideoInfo(fps=fps, num_frames=num_frames, width=width, height=height)
+
+
+def build_windows(num_frames: int, num_window_frames: int, overlap: float = OVERLAP) -> list[int]:
+    """Start frames of overlapping windows; the last window ends at the last frame."""
+    stride = max(1, int(round(num_window_frames * (1.0 - overlap))))
+    if num_frames <= num_window_frames:
+        return [0]
+
+    last_start = num_frames - num_window_frames
+    starts = list(range(0, last_start + 1, stride))
+    if starts[-1] != last_start:
+        starts.append(last_start)
+    return starts
 
 
 def read_video_window(
@@ -39,6 +62,10 @@ def read_video_window(
     num_frames: int,
     image_processor: VideoMAEImageProcessor,
 ) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return VideoMAE pixel values (1, F, C, H, W) and a per-frame validity mask.
+
+    Frames past the end of the video repeat the last frame and are marked invalid.
+    """
     capture = cv2.VideoCapture(str(video_path))
     if not capture.isOpened():
         raise RuntimeError(f"Cannot open video: {video_path}")
@@ -49,7 +76,8 @@ def read_video_window(
     for _ in range(num_frames):
         ok, frame = capture.read()
         if not ok:
-            valid.append(False)
+            # The padding loop below marks the missing frames. (The original script also
+            # appended False here, giving 33 flags for 32 frames and crashing the reshape.)
             break
         frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         valid.append(True)
@@ -70,27 +98,51 @@ def read_video_window(
     return pixel_values, torch.tensor(valid, dtype=torch.bool)
 
 
-def load_audio(video_path: str | Path) -> torch.Tensor:
+def _run(command: list[str]) -> bytes:
     try:
-        decoded = subprocess.run(
-            [
-                "ffmpeg", "-nostdin", "-v", "error", "-i", str(video_path),
-                "-f", "f32le", "-acodec", "pcm_f32le", "-ac", "1", "-ar",
-                str(AUDIO_SR), "pipe:1",
-            ],
-            check=True,
-            capture_output=True,
-        )
+        return subprocess.run(command, check=True, capture_output=True).stdout
     except FileNotFoundError as exc:
         raise RuntimeError("FFmpeg is required to decode audio from video") from exc
     except subprocess.CalledProcessError as exc:
         message = exc.stderr.decode("utf-8", errors="replace").strip()
-        raise RuntimeError(f"FFmpeg could not decode video audio: {message}") from exc
+        raise RuntimeError(f"Could not decode video audio: {message}") from exc
 
-    samples = np.frombuffer(decoded.stdout, dtype="<f4").copy()
-    if samples.size == 0:
+
+def decode_audio(video_path: str | Path) -> tuple[torch.Tensor, int]:
+    """Decode the first audio stream at its native rate: float32 (channels, samples), sr."""
+    probe = _run([
+        "ffprobe", "-v", "error", "-select_streams", "a:0",
+        "-show_entries", "stream=sample_rate,channels", "-of", "csv=p=0", str(video_path),
+    ]).decode().strip()
+    if not probe:
         raise RuntimeError("Video contains no decodable audio stream")
-    return torch.from_numpy(samples).unsqueeze(0).contiguous()
+    sample_rate, channels = (int(value) for value in probe.split(",")[:2])
+
+    raw = _run([
+        "ffmpeg", "-nostdin", "-v", "error", "-i", str(video_path), "-map", "0:a:0",
+        "-f", "f32le", "-acodec", "pcm_f32le", "pipe:1",
+    ])
+    samples = np.frombuffer(raw, dtype="<f4").copy()
+    if samples.size == 0 or samples.size % channels:
+        raise RuntimeError("Video contains no decodable audio stream")
+    # Interleaved PCM -> channels first, like torchaudio.load.
+    return torch.from_numpy(samples).reshape(-1, channels).T.contiguous(), sample_rate
+
+
+def load_audio(video_path: str | Path) -> torch.Tensor:
+    """Mono float32 waveform at AUDIO_SR, shape (1, samples).
+
+    Same steps as the original torchaudio pipeline: decode, average channels,
+    then torchaudio's sinc resampling (see ``resample.py``).
+    """
+    waveform, sr = decode_audio(video_path)
+    # Stereo -> mono
+    if waveform.shape[0] > 1:
+        waveform = waveform.mean(dim=0, keepdim=True)
+    waveform = waveform.float()
+    if sr != AUDIO_SR:
+        waveform = resample(waveform, sr, AUDIO_SR)
+    return waveform.contiguous()
 
 
 def get_audio_window(
@@ -98,6 +150,7 @@ def get_audio_window(
     start_time: float,
     duration: float,
 ) -> tuple[torch.Tensor, torch.Tensor]:
+    """Slice and zero-pad a window; padding mask is True for padded samples."""
     start_sample = max(0, int(round(start_time * AUDIO_SR)))
     num_samples = max(1, int(round(duration * AUDIO_SR)))
     end_sample = min(waveform.shape[-1], start_sample + num_samples)
@@ -112,51 +165,3 @@ def get_audio_window(
     padding_mask = torch.ones(1, num_samples, dtype=torch.bool)
     padding_mask[:, :valid_samples] = False
     return segment, padding_mask
-
-
-@torch.inference_mode()
-def extract_video_feature(
-    videomae: VideoMAEModel,
-    processor: VideoMAEImageProcessor,
-    video_path: str | Path,
-    start_frame: int,
-    device: torch.device,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    pixel_values, frame_valid = read_video_window(
-        video_path, start_frame, NUM_VIDEO_FRAMES, processor
-    )
-    output = videomae(pixel_values=pixel_values.to(device, non_blocking=True))
-    tokens = output.last_hidden_state
-    temporal_tokens = NUM_VIDEO_FRAMES // int(videomae.config.tubelet_size)
-    spatial_tokens = (
-        int(videomae.config.image_size) // int(videomae.config.patch_size)
-    ) ** 2
-    hidden_dim = tokens.shape[-1]
-    expected_tokens = temporal_tokens * spatial_tokens
-    if tokens.shape[1] != expected_tokens:
-        raise RuntimeError(
-            f"VideoMAE token mismatch: got {tokens.shape[1]}, expected {expected_tokens}"
-        )
-
-    features = tokens.reshape(1, temporal_tokens, spatial_tokens, hidden_dim).mean(dim=2)
-    frames_per_token = NUM_VIDEO_FRAMES // temporal_tokens
-    temporal_padding = ~frame_valid.reshape(
-        temporal_tokens, frames_per_token
-    ).any(dim=1)
-    return features.float(), temporal_padding.unsqueeze(0).to(device)
-
-
-@torch.inference_mode()
-def extract_audio_feature(
-    beats,
-    waveform: torch.Tensor,
-    start_time: float,
-    duration: float,
-    device: torch.device,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    segment, padding_mask = get_audio_window(waveform, start_time, duration)
-    features, feature_padding = beats.extract_features(
-        segment.to(device, non_blocking=True),
-        padding_mask=padding_mask.to(device, non_blocking=True),
-    )
-    return features.float(), feature_padding.bool()

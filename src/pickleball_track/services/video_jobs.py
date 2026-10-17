@@ -1,31 +1,42 @@
-import tempfile
+"""Video job business logic: fetch from MinIO, run inference, score the result."""
+
+from __future__ import annotations
+
 import logging
+import tempfile
 import time
 from collections.abc import Callable
-from threading import Lock
-from functools import lru_cache
+from dataclasses import dataclass
 from pathlib import Path
-from types import ModuleType
-from typing import Any
+from typing import Any, Protocol
 
-from fastapi import HTTPException
-
-from ..core.config import DEFAULT_CHECKPOINT_PATH, MAX_VIDEO_BYTES
+from ..core.config import SUPPORTED_VIDEO_SUFFIXES, Settings
+from ..core.exceptions import (
+    InvalidInputError,
+    PayloadTooLargeError,
+    PickleballError,
+    ProcessingError,
+    ServiceUnavailableError,
+)
 from ..integrations.minio import create_minio_client
-from ..api.schemas import VideoJobRequest, VideoJobResponse, VideoMetrics
 
 logger = logging.getLogger(__name__)
-_inference_lock = Lock()
 
 
-@lru_cache(maxsize=1)
-def _load_inference_module() -> ModuleType:
-    from . import inference
-
-    return inference
+class VideoPredictor(Protocol):
+    def predict(self, video_path: str | Path) -> dict[str, Any]: ...
 
 
-def _feedback(accuracy: float) -> str:
+@dataclass(frozen=True)
+class JobScore:
+    hit_count: int
+    miss_count: int
+    accuracy: float
+    score: float
+    feedback: str
+
+
+def feedback_for(accuracy: float) -> str:
     if accuracy >= 0.8:
         return "Thực hiện động tác đạt yêu cầu."
     if accuracy >= 0.5:
@@ -33,92 +44,73 @@ def _feedback(accuracy: float) -> str:
     return "Chưa đạt yêu cầu, hãy luyện tập lại các động tác."
 
 
-def process_video_job(
-    request: VideoJobRequest,
-    *,
-    minio_client_factory: Callable[[str], Any] | None = None,
-    inference_module_loader: Callable[[], Any] | None = None,
-    checkpoint_path: Path | None = None,
-) -> VideoJobResponse:
-    started_at = time.perf_counter()
-    configured_checkpoint = checkpoint_path or DEFAULT_CHECKPOINT_PATH
-    create_client = minio_client_factory or create_minio_client
-    load_inference = inference_module_loader or _load_inference_module
-    suffix = Path(request.object_key).suffix.lower()
-    if suffix not in {".mp4", ".mov"}:
-        raise HTTPException(
-            status_code=422,
-            detail="object_key must identify an MP4 or MOV video",
-        )
+def score_counts(hits: int, misses: int) -> JobScore:
+    """Product scoring: accuracy = hits / (hits + misses); no_event is not counted."""
+    attempts = hits + misses
+    accuracy = hits / attempts if attempts else 0.0
+    return JobScore(
+        hit_count=hits,
+        miss_count=misses,
+        accuracy=round(accuracy, 4),
+        score=round(accuracy * 10.0, 2),
+        feedback=feedback_for(accuracy),
+    )
 
-    if not configured_checkpoint.is_file():
-        raise HTTPException(
-            status_code=503,
-            detail="Model checkpoint is not configured or unavailable",
-        )
 
-    try:
-        client = create_client(request.minio_endpoint)
-        with tempfile.TemporaryDirectory(prefix="pickleball-video-") as temp_dir:
-            local_video = Path(temp_dir) / f"input{suffix}"
-            object_info = client.stat_object(request.bucket, request.object_key)
-            if object_info.size > MAX_VIDEO_BYTES:
-                raise HTTPException(
-                    status_code=413,
-                    detail="Video exceeds the configured size limit",
-                )
-            client.fget_object(request.bucket, request.object_key, str(local_video))
-            if local_video.stat().st_size > MAX_VIDEO_BYTES:
-                raise HTTPException(
-                    status_code=413,
-                    detail="Video exceeds the configured size limit",
-                )
-            with _inference_lock:
-                result = load_inference().inference(
-                    video_path=local_video,
-                    checkpoint_path=configured_checkpoint,
-                )
-    except HTTPException:
-        raise
-    except Exception as exc:
-        logger.exception(
-            "Video job failed",
+class VideoJobService:
+    def __init__(
+        self,
+        settings: Settings,
+        predictor: VideoPredictor | None,
+        minio_client_factory: Callable[[str, Settings], Any] = create_minio_client,
+    ):
+        self.settings = settings
+        self.predictor = predictor
+        self.minio_client_factory = minio_client_factory
+
+    def _check_size(self, size: int) -> None:
+        if size > self.settings.max_video_bytes:
+            raise PayloadTooLargeError("Video exceeds the configured size limit")
+
+    def process(
+        self, *, job_id: str, bucket: str, object_key: str, minio_endpoint: str
+    ) -> JobScore:
+        started_at = time.perf_counter()
+        suffix = Path(object_key).suffix.lower()
+        if suffix not in SUPPORTED_VIDEO_SUFFIXES:
+            raise InvalidInputError("object_key must identify an MP4 or MOV video")
+        if self.predictor is None:
+            raise ServiceUnavailableError("Model checkpoint is not configured or unavailable")
+
+        try:
+            client = self.minio_client_factory(minio_endpoint, self.settings)
+            with tempfile.TemporaryDirectory(prefix="pickleball-video-") as temp_dir:
+                local_video = Path(temp_dir) / f"input{suffix}"
+                self._check_size(client.stat_object(bucket, object_key).size)
+                client.fget_object(bucket, object_key, str(local_video))
+                self._check_size(local_video.stat().st_size)
+                result = self.predictor.predict(local_video)
+        except PickleballError:
+            raise
+        except Exception as exc:
+            logger.exception(
+                "Video job failed",
+                extra={
+                    "job_id": job_id,
+                    "duration_seconds": round(time.perf_counter() - started_at, 4),
+                },
+            )
+            raise ProcessingError("Could not download the video or complete inference") from exc
+
+        job_score = score_counts(int(result["total_hits"]), int(result["total_misses"]))
+        logger.info(
+            "Video job completed",
             extra={
-                "job_id": request.job_id,
+                "job_id": job_id,
+                "hit_count": job_score.hit_count,
+                "miss_count": job_score.miss_count,
+                "score": job_score.score,
                 "duration_seconds": round(time.perf_counter() - started_at, 4),
             },
         )
-        raise HTTPException(
-            status_code=502,
-            detail="Could not download the video or complete inference",
-        ) from exc
-
-    hits = int(result["total_hits"])
-    misses = int(result["total_misses"])
-    attempts = hits + misses
-    accuracy = hits / attempts if attempts else 0.0
-    score = round(accuracy * 10.0, 2)
-    duration_seconds = round(time.perf_counter() - started_at, 4)
-    logger.info(
-        "Video job completed",
-        extra={
-            "job_id": request.job_id,
-            "hit_count": hits,
-            "miss_count": misses,
-            "score": score,
-            "duration_seconds": duration_seconds,
-        },
-    )
-
-    return VideoJobResponse(
-        jobId=request.job_id,
-        resultId=request.result_id,
-        status="completed",
-        score=score,
-        feedback=_feedback(accuracy),
-        metrics=VideoMetrics(
-            accuracy=round(accuracy, 4),
-            hitCount=hits,
-            missCount=misses,
-        ),
-    )
+        return job_score

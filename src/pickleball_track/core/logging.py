@@ -1,26 +1,16 @@
 """Minimal JSON logging setup for API and inference events."""
 
-from datetime import datetime, timezone
 import json
 import logging
-import os
+from datetime import datetime, timezone
+
+# Attributes present on every LogRecord; anything else was passed via `extra`.
+_STANDARD_ATTRIBUTES = frozenset(
+    logging.LogRecord("", 0, "", 0, "", (), None).__dict__
+) | {"message", "asctime", "taskName"}
 
 
 class JsonFormatter(logging.Formatter):
-    _extra_fields = (
-        "device",
-        "duration_seconds",
-        "fps",
-        "frames",
-        "hit_count",
-        "job_id",
-        "miss_count",
-        "model",
-        "score",
-        "window_count",
-        "video_duration_seconds",
-    )
-
     def format(self, record: logging.LogRecord) -> str:
         payload = {
             "timestamp": datetime.fromtimestamp(
@@ -30,19 +20,15 @@ class JsonFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
-        for field in self._extra_fields:
-            if hasattr(record, field):
-                payload[field] = getattr(record, field)
+        for key, value in record.__dict__.items():
+            if key not in _STANDARD_ATTRIBUTES and not key.startswith("_"):
+                payload[key] = value
         if record.exc_info:
             payload["exception"] = self.formatException(record.exc_info)
         return json.dumps(payload, ensure_ascii=True, default=str)
 
 
-def configure_logging() -> None:
+def configure_logging(level: str = "INFO") -> None:
     handler = logging.StreamHandler()
     handler.setFormatter(JsonFormatter())
-    logging.basicConfig(
-        level=os.getenv("LOG_LEVEL", "INFO").upper(),
-        handlers=[handler],
-        force=True,
-    )
+    logging.basicConfig(level=level.upper(), handlers=[handler], force=True)

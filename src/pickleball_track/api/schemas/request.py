@@ -26,18 +26,3 @@ class VideoJobRequest(BaseModel):
     attempt: int = Field(ge=1)
     schema_version: int = Field(ge=1)
     detail: VideoDetail
-
-
-class VideoMetrics(BaseModel):
-    accuracy: float
-    hitCount: int
-    missCount: int
-
-
-class VideoJobResponse(BaseModel):
-    jobId: str
-    resultId: str
-    status: Literal["completed"]
-    score: float
-    feedback: str
-    metrics: VideoMetrics
