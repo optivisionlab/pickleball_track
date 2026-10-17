@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# YouTube Batch Downloader.
+#
+#   ytdown                         mở giao diện trên trình duyệt
+#   ytdown --no-browser            chạy server, không tự mở trình duyệt
+#   ytdown --cli links.csv [...]   tải bằng dòng lệnh (xem: ytdown --cli -h)
+#   ytdown --update                cập nhật yt-dlp khi YouTube báo lỗi
+#   ytdown --check                 kiểm tra môi trường
+set -euo pipefail
+
+DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+VENV="$DIR/.venv"
+PY="$VENV/bin/python"
+
+# Lần chạy đầu (vừa clone về): tự cài môi trường.
+if [[ ! -x "$PY" ]] || ! "$PY" -c 'import yt_dlp' 2>/dev/null; then
+  echo "Chưa cài môi trường cho ytdown, đang cài..."
+  bash "$DIR/install.sh" --no-launch
+fi
+
+# deno (cài bằng pip) nằm trong .venv/bin; yt-dlp tìm JS runtime trong PATH.
+export PATH="$VENV/bin:$PATH"
+
+case "${1:-}" in
+  --update)
+    exec "$PY" -m pip install -q --disable-pip-version-check -U -r "$DIR/requirements.txt"
+    ;;
+  --check)
+    ok=1
+    command -v ffmpeg >/dev/null && echo "   ffmpeg: $(command -v ffmpeg)" || { echo "   ⚠ thiếu ffmpeg"; ok=0; }
+    js="$(command -v deno || command -v node || command -v bun || true)"
+    [[ -n "$js" ]] && echo "   JS runtime: $js" || { echo "   ⚠ thiếu JS runtime (deno/node)"; ok=0; }
+    (( ok ))
+    ;;
+  --cli)
+    shift
+    exec "$PY" "$DIR/tooldownyt.py" "$@"
+    ;;
+  *)
+    exec "$PY" "$DIR/ytgui.py" "$@"
+    ;;
+esac

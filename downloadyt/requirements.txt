@@ -1,0 +1,3 @@
+# Thư viện Python cần cho tool (install.sh tự cài). YouTube thay đổi thường xuyên nên luôn dùng bản mới: ytdown --update
+# [default] kèm yt-dlp-ejs; [deno] cài sẵn JS runtime — cả hai cần để YouTube trả về format 4K/1080p.
+yt-dlp[default,deno]>=2026.8.19
