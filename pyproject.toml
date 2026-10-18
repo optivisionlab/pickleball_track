@@ -18,6 +18,7 @@ dependencies = [
     "pydantic>=2.6,<3.0",
     "torch>=2.2",
     "torchvision>=0.17",
+    "torchaudio>=2.2",
     "transformers>=4.40,<5.0",
     "uvicorn[standard]>=0.27",
 ]
