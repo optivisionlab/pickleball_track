@@ -1057,11 +1057,11 @@ def parse_args():
     )
     p.add_argument(
         "--cache-dir",
-        default="./feature_cache",
+        default=f"{VERSION_ARTIFACTS}/feature_cache",
     )
     p.add_argument(
         "--output-dir",
-        default="./checkpoints",
+        default=f"{VERSION_ARTIFACTS}/checkpoints",
     )
     p.add_argument(
         "--epochs",

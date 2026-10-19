@@ -1,11 +1,18 @@
+import os
+
+# Data (weights, unilm, checkpoints, caches) lives outside the repo so that
+# switching git branches only changes code. Override with PB_ARTIFACTS.
+ARTIFACTS_ROOT = os.environ.get("PB_ARTIFACTS", "/data/Cuong/pickleball/artifacts")
+VERSION_ARTIFACTS = os.path.join(ARTIFACTS_ROOT, "baseline", "v2")
+
 DEFAULT_VIDEOMAE = "MCG-NJU/videomae-base"
 VIDEO_EXTENSIONS = {".mp4", ".MOV", ".mov"}
-BEATS_CHECKPOINT = "./weights/BEATs_iter3_plus_AS2M.pt"
+BEATS_CHECKPOINT = f"{ARTIFACTS_ROOT}/weights/BEATs_iter3_plus_AS2M.pt"
 IMAGE_SIZE = 224
 AUDIO_SR = 16000
 OVERLAP = 0.5
 EVENT_RADIUS_SEC = 1.0
-BEATS_ROOT = "/data/Cuong/pickleball/pickleball_track/baseline/v2/unilm"
+BEATS_ROOT = f"{ARTIFACTS_ROOT}/unilm"
 N_SPLITS = 5
 SEED = 42
 

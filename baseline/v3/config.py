@@ -1,12 +1,19 @@
+import os
+
+# Data (weights, unilm, checkpoints, caches) lives outside the repo so that
+# switching git branches only changes code. Override with PB_ARTIFACTS.
+ARTIFACTS_ROOT = os.environ.get("PB_ARTIFACTS", "/data/Cuong/pickleball/artifacts")
+VERSION_ARTIFACTS = os.path.join(ARTIFACTS_ROOT, "baseline", "v3")
+
 # =========================
 # PRETRAINED MODELS
 # =========================
 
 DEFAULT_VIDEOMAE = "MCG-NJU/videomae-base"
 
-BEATS_CHECKPOINT = "./weights/BEATs_iter3_plus_AS2M.pt"
+BEATS_CHECKPOINT = f"{ARTIFACTS_ROOT}/weights/BEATs_iter3_plus_AS2M.pt"
 
-BEATS_ROOT = "/data/Cuong/pickleball/pickleball_track/baseline/v3/unilm"
+BEATS_ROOT = f"{ARTIFACTS_ROOT}/unilm"
 
 
 # =========================
@@ -108,6 +115,6 @@ EVENT_MERGE_DISTANCE = 1.0
 # OUTPUT
 # =========================
 
-OUTPUT_DIR = "./checkpoints"
+OUTPUT_DIR = f"{VERSION_ARTIFACTS}/checkpoints"
 
-FEATURE_CACHE_DIR = "./feature_cache"
+FEATURE_CACHE_DIR = f"{VERSION_ARTIFACTS}/feature_cache"

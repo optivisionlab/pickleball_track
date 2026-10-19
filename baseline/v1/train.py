@@ -74,7 +74,7 @@ def load_videomae():
 
 def load_beats():
     import sys
-    base_unilm = "/data/Cuong/pickleball/pickleball_track/baseline/v1/unilm"
+    base_unilm = BEATS_ROOT
     beats_dir = os.path.join(base_unilm, "beats")
     sys.path.append(base_unilm)
     sys.path.append(beats_dir)

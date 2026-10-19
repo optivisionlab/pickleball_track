@@ -20,6 +20,7 @@ from torchvision import transforms
 from tqdm import tqdm
 
 from config import (
+    VERSION_ARTIFACTS,
     AUDIO_SR,
     BATCH_SIZE,
     BEATS_CHECKPOINT,
@@ -470,8 +471,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--videomae", default=DEFAULT_VIDEOMAE)
     parser.add_argument("--beats-checkpoint", default=BEATS_CHECKPOINT)
     parser.add_argument("--beats-root", default=BEATS_ROOT)
-    parser.add_argument("--cache-dir", default="./benchmark_feature_cache")
-    parser.add_argument("--output-dir", default="./checkpoints_benchmark")
+    parser.add_argument("--cache-dir", default=f"{VERSION_ARTIFACTS}/benchmark_feature_cache")
+    parser.add_argument("--output-dir", default=f"{VERSION_ARTIFACTS}/checkpoints_benchmark")
     parser.add_argument("--epochs", type=int, default=EPOCHS)
     parser.add_argument("--batch-size", type=int, default=BATCH_SIZE)
     parser.add_argument("--workers", type=int, default=NUM_WORKERS)

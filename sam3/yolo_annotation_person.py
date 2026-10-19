@@ -90,7 +90,7 @@ if __name__ == "__main__":
     os.makedirs(image_dir, exist_ok=True)
     os.makedirs(annotation_dir, exist_ok=True)
     print("Loading model...")
-    model = YOLO("yolo11s-pose.pt")
+    model = YOLO(os.path.join(os.environ.get("PB_ARTIFACTS", "/data/Cuong/pickleball/artifacts"), "weights", "yolo11s-pose.pt"))
     video_list = sorted(glob.glob("/data/raw/*.mp4")+ glob.glob("/data/raw/*.MOV"))
     for video_path in video_list:
         video_name = os.path.splitext(

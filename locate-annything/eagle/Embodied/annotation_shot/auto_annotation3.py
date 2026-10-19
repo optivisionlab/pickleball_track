@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     video_shot = "/data/Cuong/pickleball/data/video_capcut"
 
-    model = YOLO("yolo11s-pose.pt")
+    model = YOLO(os.path.join(os.environ.get("PB_ARTIFACTS", "/data/Cuong/pickleball/artifacts"), "weights", "yolo11s-pose.pt"))
 
     # ============================================================
     # TÌM TẤT CẢ VIDEO

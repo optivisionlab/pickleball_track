@@ -18,6 +18,7 @@ from tqdm import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer, VideoMAEModel
 
 from config import (
+	VERSION_ARTIFACTS,
 	DEFAULT_CLIP,
 	DEFAULT_VIDEOMAE,
 	EPOCHS,
@@ -264,8 +265,8 @@ def parse_args():
 	parser.add_argument("--labels-csv", default=DEFAULT_LABELS_CSV)
 	parser.add_argument("--videomae", default=DEFAULT_VIDEOMAE)
 	parser.add_argument("--clip", default=DEFAULT_CLIP)
-	parser.add_argument("--cache-dir", default="./benchmark_feature_cache")
-	parser.add_argument("--output-dir", default="./checkpoints_benchmark")
+	parser.add_argument("--cache-dir", default=f"{VERSION_ARTIFACTS}/benchmark_feature_cache")
+	parser.add_argument("--output-dir", default=f"{VERSION_ARTIFACTS}/checkpoints_benchmark")
 	parser.add_argument("--epochs", type=int, default=EPOCHS)
 	parser.add_argument("--batch-size", type=int, default=32)
 	parser.add_argument("--workers", type=int, default=NUM_WORKERS)

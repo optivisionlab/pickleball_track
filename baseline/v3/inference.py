@@ -14,6 +14,7 @@ import torchaudio
 from transformers import VideoMAEImageProcessor, VideoMAEModel
 
 from config import (
+    VERSION_ARTIFACTS,
     AUDIO_SR,
     BEATS_CHECKPOINT,
     BEATS_ROOT,
@@ -1104,7 +1105,7 @@ def parse_args():
 
     parser.add_argument(
         "--checkpoint",
-        default = "/data/Cuong/pickleball/pickleball_track/baseline/v3/checkpoints/fold_1/best.pt",
+        default = f"{VERSION_ARTIFACTS}/checkpoints/fold_1/best.pt",
         help="Path to trained fold/best checkpoint.",
     )
 

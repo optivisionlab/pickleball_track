@@ -1147,7 +1147,7 @@ def parse_args():
     )
     parser.add_argument(
         "--output-dir",
-        default="./checkpoints",
+        default=f"{VERSION_ARTIFACTS}/checkpoints",
     )
     parser.add_argument(
         "--epochs",

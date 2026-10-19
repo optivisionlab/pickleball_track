@@ -18,6 +18,7 @@ from tqdm import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer, VideoMAEModel
 
 from config import (
+    VERSION_ARTIFACTS,
     BATCH_SIZE,
     DEFAULT_CLIP,
     DEFAULT_VIDEOMAE,
@@ -631,8 +632,8 @@ def parse_args():
     p.add_argument("--data-dir", default="/data/Cuong/pickleball/data/raw")
     p.add_argument("--videomae", default=DEFAULT_VIDEOMAE)
     p.add_argument("--clip", default=DEFAULT_CLIP)
-    p.add_argument("--cache-dir", default="./feature_cache_vt_v2")
-    p.add_argument("--output-dir", default="./checkpoints_vt_v2")
+    p.add_argument("--cache-dir", default=f"{VERSION_ARTIFACTS}/feature_cache_vt_v2")
+    p.add_argument("--output-dir", default=f"{VERSION_ARTIFACTS}/checkpoints_vt_v2")
     p.add_argument("--epochs", type=int, default=EPOCHS)
     p.add_argument("--batch-size", type=int, default=BATCH_SIZE)
     p.add_argument("--workers", type=int, default=NUM_WORKERS)

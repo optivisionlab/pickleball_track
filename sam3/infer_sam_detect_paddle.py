@@ -16,7 +16,7 @@ if __name__ == "__main__":
     image_dir = "/data/pickleball/data/paddle/images"
     annotation_dir = "/data/pickleball/data/paddle/annotations"
     label_to_predict = "black paddle"
-    model_path = "/data/pickleball/sam3.pt"
+    model_path = os.path.join(os.environ.get("PB_ARTIFACTS", "/data/Cuong/pickleball/artifacts"), "sam3", "sam3.pt")
 
     os.makedirs(image_dir, exist_ok = True)
     os.makedirs(annotation_dir, exist_ok = True)
