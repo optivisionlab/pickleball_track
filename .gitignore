@@ -4,7 +4,6 @@ __pycache__/
 *$py.class
 sam3/sam3-inference
 sam3/sam3.pt
-local-annything
 # C extensions
 *.so
 
@@ -201,7 +200,7 @@ cython_debug/
 #   that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
 #   and can be added to the global gitignore or merged into this file. However, if you prefer, 
 #   you could uncomment the following to ignore the entire vscode folder
-# .vscode/
+.vscode/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
@@ -218,3 +217,47 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Baseline feature cache and feature benchmark directories
+feature_cache/
+benchmark_feature_cache/
+feature_benchmark/
+benchmark_feature/
+*feature_cache*/
+*feature_benchmark*/
+*benchmark_feature*/
+baseline/v*/feature_cache/
+baseline/v*/benchmark_feature_cache/
+
+# Baseline checkpoints
+checkpoints/
+checkpoints_benchmark/
+*checkpoint*/
+baseline/v*/checkpoints/
+baseline/v*/checkpoints_benchmark/
+baseline/v*/*checkpoint*/
+
+# Model weights / pretrained files (download separately, do not push)
+weights/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.engine
+baseline/v*/weights/
+
+# Videos / media data
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.wav
+
+# External repos cloned locally (install separately, see README)
+baseline/v*/unilm/
+
+# locate-annything: vendored source; ignore model files & build artifacts
+locate-annything/eagle/Embodied/LocateAnything-3B/
+locate-annything/eagle/**/*.egg-info/
+locate-annything/eagle/**/*.pdf
