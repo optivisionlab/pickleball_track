@@ -26,3 +26,6 @@ docs
 LICENSE
 
 src/weights
+
+# Nested git checkout of microsoft/unilm (not needed at runtime)
+vendor/unilm/.git
