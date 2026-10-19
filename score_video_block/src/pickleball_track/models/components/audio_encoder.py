@@ -8,7 +8,10 @@ import torch
 
 
 class AudioEncoder:
-    """Calls ``BEATs.extract_features`` on a single padded audio window."""
+    """Calls ``BEATs.extract_features`` on a batch of equally padded audio windows.
+
+    Always runs in fp32: BEATs' Kaldi fbank overflows in fp16.
+    """
 
     def __init__(self, model: Any, device: torch.device):
         # `model` is a microsoft/unilm BEATs instance loaded from its source checkout.
@@ -21,7 +24,7 @@ class AudioEncoder:
         segment: torch.Tensor,
         padding_mask: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Return features (1, N, D) and feature padding mask (1, N) on device."""
+        """Segments (B, S) + padding (B, S) -> features (B, N, D), feature padding (B, N) on device."""
         features, feature_padding = self.model.extract_features(
             segment.to(self.device, non_blocking=True),
             padding_mask=padding_mask.to(self.device, non_blocking=True),

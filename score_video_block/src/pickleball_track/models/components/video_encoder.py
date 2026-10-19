@@ -56,9 +56,11 @@ def adapt_videomae_to_frame_count(model: VideoMAEModel, target_frames: int = NUM
 class VideoEncoder:
     """Mean-pools VideoMAE spatial tokens into one feature per tubelet."""
 
-    def __init__(self, model: VideoMAEModel, device: torch.device):
+    def __init__(self, model: VideoMAEModel, device: torch.device, amp_dtype: torch.dtype | None = None):
         self.model = model
         self.device = device
+        # Autocast dtype for the backbone (CUDA only); None runs in fp32.
+        self.amp_dtype = amp_dtype
 
     @property
     def hidden_size(self) -> int:
@@ -70,9 +72,20 @@ class VideoEncoder:
         pixel_values: torch.Tensor,
         frame_valid: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Return features (1, T, D) and temporal padding mask (1, T) on device."""
+        """Batch of windows (B, F, C, H, W) + validity (B, F) -> features (B, T, D), padding (B, T).
+
+        A 1-D ``frame_valid`` (F,) is accepted for a single window.
+        """
         config = self.model.config
-        output = self.model(pixel_values=pixel_values.to(self.device, non_blocking=True))
+        if frame_valid.ndim == 1:
+            frame_valid = frame_valid.unsqueeze(0)
+        batch = pixel_values.shape[0]
+        with torch.autocast(
+            device_type=self.device.type,
+            dtype=self.amp_dtype or torch.float32,
+            enabled=self.amp_dtype is not None,
+        ):
+            output = self.model(pixel_values=pixel_values.to(self.device, non_blocking=True))
         tokens = output.last_hidden_state
         temporal_tokens = NUM_VIDEO_FRAMES // int(config.tubelet_size)
         spatial_tokens = (int(config.image_size) // int(config.patch_size)) ** 2
@@ -83,9 +96,10 @@ class VideoEncoder:
                 f"VideoMAE token mismatch: got {tokens.shape[1]}, expected {expected_tokens}"
             )
 
-        features = tokens.reshape(1, temporal_tokens, spatial_tokens, hidden_dim).mean(dim=2)
+        # Pool in fp32 so reduced-precision activations do not lose accuracy here.
+        features = tokens.float().reshape(batch, temporal_tokens, spatial_tokens, hidden_dim).mean(dim=2)
         frames_per_token = NUM_VIDEO_FRAMES // temporal_tokens
         temporal_padding = ~frame_valid.reshape(
-            temporal_tokens, frames_per_token
-        ).any(dim=1)
-        return features.float(), temporal_padding.unsqueeze(0).to(self.device)
+            batch, temporal_tokens, frames_per_token
+        ).any(dim=2)
+        return features, temporal_padding.to(self.device)

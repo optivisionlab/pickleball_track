@@ -121,3 +121,23 @@ def test_inference_failure_is_a_processing_error_not_no_event(test_settings):
     with pytest.raises(ProcessingError):
         _process(_service(test_settings, predictor, FakeMinioClient()))
     assert not predictor.paths[0].parent.exists()
+
+
+@pytest.mark.parametrize(
+    ("public_endpoint", "expected"),
+    [(None, "minio:9000"), ("100.116.40.89:9000", "100.116.40.89:9000")],
+)
+def test_configured_public_endpoint_overrides_the_request(test_settings, public_endpoint, expected):
+    from dataclasses import replace
+
+    endpoints = []
+    client, predictor = FakeMinioClient(), RecordingPredictor()
+    service = VideoJobService(
+        replace(test_settings, minio_public_endpoint=public_endpoint),
+        predictor,
+        minio_client_factory=lambda endpoint, s: endpoints.append(endpoint) or client,
+    )
+
+    _process(service)
+
+    assert endpoints == [expected]

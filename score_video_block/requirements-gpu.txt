@@ -1,0 +1,9 @@
+# GPU environment (CUDA 12.8)
+# Usage: pip install -r requirements-gpu.txt
+--extra-index-url https://download.pytorch.org/whl/cu128
+
+-r requirements.txt
+
+torch==2.10.0+cu128
+torchvision==0.25.0+cu128
+torchaudio==2.10.0+cu128

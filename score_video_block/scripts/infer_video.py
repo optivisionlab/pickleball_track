@@ -42,8 +42,9 @@ def main() -> None:
     if args.checkpoint:
         settings = replace(settings, checkpoint_path=Path(args.checkpoint).expanduser().resolve())
 
+    models = load_models(settings)
     service = VideoInferenceService(
-        load_models(settings),
+        models,
         InferenceParams(
             hit_threshold=args.hit_threshold,
             miss_threshold=args.miss_threshold,
@@ -53,7 +54,10 @@ def main() -> None:
         ),
     )
     video_path = Path(args.video)
-    result = service.predict(video_path)
+    try:
+        result = service.predict(video_path)
+    finally:
+        models.close()
 
     output_path = Path(args.output) if args.output else video_path.with_suffix(".inference.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)

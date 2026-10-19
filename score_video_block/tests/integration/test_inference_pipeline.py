@@ -56,3 +56,31 @@ def test_frame_count_overestimate_does_not_crash(tiny_models, clip_path, monkeyp
     result = VideoInferenceService(tiny_models).predict(clip_path)
 
     assert len(result["temporal_predictions"]) > 0
+
+
+@pytest.mark.parametrize("batch_size", [2, 3, 16])
+def test_batch_size_does_not_change_predictions(tiny_models, clip_path, batch_size):
+    from dataclasses import replace
+
+    single = VideoInferenceService(replace(tiny_models, batch_size=1)).predict(clip_path)
+    batched = VideoInferenceService(replace(tiny_models, batch_size=batch_size)).predict(clip_path)
+
+    assert batched["events"] == single["events"]
+    for a, b in zip(batched["temporal_predictions"], single["temporal_predictions"], strict=True):
+        assert a["time"] == b["time"]
+        for label, probability in b["probabilities"].items():
+            assert a["probabilities"][label] == pytest.approx(probability, abs=1e-5)
+
+
+def test_process_pool_pipeline_matches_threaded_pipeline(tiny_models, clip_path):
+    from dataclasses import replace
+
+    from pickleball_track.pipelines.frames import ProcessFramePool
+
+    pool = ProcessFramePool(tiny_models.processor, workers=2)
+    try:
+        pooled = VideoInferenceService(replace(tiny_models, frame_pool=pool)).predict(clip_path)
+    finally:
+        pool.close()
+
+    assert pooled == VideoInferenceService(tiny_models).predict(clip_path)

@@ -1,14 +1,12 @@
 import pytest
 import torch
-from transformers import VideoMAEImageProcessor
 
-from pickleball_track.core.config import AUDIO_SR, NUM_VIDEO_FRAMES, WEIGHTS_DIR
+from pickleball_track.core.config import AUDIO_SR
 from pickleball_track.pipelines.preprocessing import (
     build_windows,
     get_audio_window,
     get_video_info,
     load_audio,
-    read_video_window,
 )
 
 
@@ -58,19 +56,6 @@ def test_unreadable_video_raises(tmp_path):
 
     with pytest.raises(RuntimeError, match="Cannot open video"):
         get_video_info(broken)
-
-
-def test_read_video_window_uses_repository_videomae_preprocessing(clip_path):
-    processor = VideoMAEImageProcessor.from_pretrained(
-        str(WEIGHTS_DIR / "videomae-base"), local_files_only=True
-    )
-
-    pixel_values, valid = read_video_window(clip_path, 40, NUM_VIDEO_FRAMES, processor)
-
-    assert pixel_values.shape == (1, NUM_VIDEO_FRAMES, 3, 224, 224)
-    assert pixel_values.dtype == torch.float32
-    # 10 frames remain after frame 40; the rest repeat the last frame and are invalid.
-    assert valid.tolist() == [True] * 10 + [False] * 22
 
 
 def test_load_audio_decodes_mono_16khz(clip_path):

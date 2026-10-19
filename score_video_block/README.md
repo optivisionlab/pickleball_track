@@ -29,7 +29,9 @@ src/pickleball_track/
                          prediction head, VideoMAE and BEATs wrappers
     model_loader.py      backbone + checkpoint loading, ModelBundle
   pipelines/
-    preprocessing.py     video/audio decoding, sliding windows, audio windows
+    frames.py            sequential decoding, preprocessing (threads or ProcessFramePool), window batches
+    frame_workers.py     exact resize/crop/normalize + worker process (NumPy/Pillow only)
+    preprocessing.py     video metadata, audio decoding, sliding windows, audio windows
     postprocessing.py    window aggregation, smoothing, hit/miss event decoding
   services/
     inference_service.py VideoInferenceService: whole-video inference
@@ -78,11 +80,12 @@ accelerator, the model artifacts and the BEATs source checkout. Large weights
 are not tracked by Git; place them as described in `src/weights/README.md`.
 
 ```bash
+# from score_video_block/
 git clone --depth 1 --filter=blob:none --sparse https://github.com/microsoft/unilm.git vendor/unilm
-git -C vendor/unilm sparse-checkout set beats
+git -C vendor/unilm sparse-checkout set beats   # BEATs source only (~4 MB)
 
-cd score_video_block
-conda activate score_service
+conda activate score-video
+python -m pip install -r requirements-gpu.txt   # CUDA 12.8 PyTorch; requirements.txt for CPU
 python -m pip install -e ".[dev]"
 cp .env.example .env   # then fill in MinIO credentials
 ```
@@ -98,10 +101,16 @@ variables take precedence.
 | `PICKLEBALL_BEATS_CHECKPOINT` | `src/weights/BEATs_iter3_plus_AS2M.pt` | Pretrained BEATs weights |
 | `PICKLEBALL_BEATS_ROOT` | `vendor/unilm` | BEATs source checkout |
 | `PICKLEBALL_VIDEOMAE` | `src/weights/videomae-base` | Local model directory or model id |
+| `PICKLEBALL_VIDEOMAE_REPO` | `MCG-NJU/videomae-base` | Hub repo whose files missing from the local directory are downloaded at startup; empty = offline |
 | `PICKLEBALL_DEVICE` | `auto` | `auto`, `cpu`, or `cuda` |
+| `PICKLEBALL_BATCH_SIZE` | `0` | Sliding windows per forward pass; `0` = 16 on CUDA, 4 on CPU |
+| `PICKLEBALL_PRECISION` | `auto` | VideoMAE autocast: `auto` (fp16 on CUDA, fp32 on CPU), `fp32`, `fp16`, `bf16` |
+| `PICKLEBALL_GPU_PREPROCESS` | `false` | Resize/normalize frames on the GPU (pixels may differ by one 8-bit level) |
+| `PICKLEBALL_PREPROCESS_WORKERS` | `8` | Exact frame preprocessing processes (shared memory); `0` = threads in the API process |
 | `PICKLEBALL_MAX_VIDEO_BYTES` | `536870912` | Maximum MinIO object size |
 | `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` | unset | MinIO credentials (or `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`) |
 | `MINIO_SECURE` | `false` | TLS for an endpoint given without scheme |
+| `MINIO_PUBLIC_ENDPOINT` | unset | If set, always download from this endpoint instead of the request's `minio_endpoint` |
 | `LOG_LEVEL` | `INFO` | Python logging level |
 
 ### Inference hyperparameters
@@ -125,6 +134,45 @@ changed.
 
 Credentials are never logged and are hidden from `repr(Settings)`.
 
+### GPU performance
+
+On CUDA the pipeline is built for throughput:
+
+- The video is decoded **once, sequentially**, straight into a shared-memory ring.
+  Per-window seeking was removed: on variable-frame-rate phone videos
+  `CAP_PROP_POS_FRAMES` lands up to a second away from the requested frame. On
+  such videos the audio window follows the decoded frame timestamps;
+  constant-frame-rate videos keep `frame / fps` as in training.
+- `PICKLEBALL_PREPROCESS_WORKERS` worker processes rotate (portrait phone
+  videos), resize, crop and normalize each frame once (overlapping windows share
+  frames) while the GPU runs the previous batch. The result is **bit-identical**
+  to `VideoMAEImageProcessor` on OpenCV's frames (tested, including all display
+  rotations). Each worker has its own pipes; a crashed worker fails that request
+  with a `502` and is restarted for the next one.
+- `PICKLEBALL_BATCH_SIZE` windows go through VideoMAE, BEATs and the fusion model
+  together. VideoMAE runs under fp16 autocast (`PICKLEBALL_PRECISION`); BEATs
+  (its fbank overflows fp16) and the fusion model stay fp32.
+- Models are warmed up at startup, so the first request is not slower.
+
+Measured on an NVIDIA A30 (24-core Xeon Silver 4310, shared) through
+`POST /api/v1/process` with a real MinIO download:
+
+| Video | Before | Threads (`PREPROCESS_WORKERS=0`) | 8 worker processes (default) |
+| --- | --- | --- | --- |
+| 3 s, 1080×1920 (91 frames, one keyframe) | 4.6–4.8 s | 1.0–1.2 s | 1.1–1.2 s |
+| 47 s, 1080×1920, constant frame rate | 82 s | 8.6–9.8 s | 7.5–9.7 s |
+| 65 s phone video, variable frame rate, rotated | 108 s | 13.5–15.9 s | 11.4–11.8 s |
+
+Hit/miss counts on constant-frame-rate videos are unchanged; token
+probabilities differ by ≤ 0.003 from fp32 (`PICKLEBALL_PRECISION=fp32` for
+exact fp32). On variable-frame-rate videos results change because the frames
+are now the right ones. Remaining time is CPU: decoding plus exact resizing
+costs ~25 ms of CPU per 1080p frame; batch sizes above 16 do not help.
+
+Worker processes exchange frames through `/dev/shm` (~10 MB per worker for
+1080p). Docker's default 64 MB is too small: run containers with
+`--shm-size=1g`; otherwise the service logs a warning and uses threads.
+
 ## Run
 
 ```bash
@@ -132,14 +180,20 @@ python -m uvicorn pickleball_track.api.main:app --host 0.0.0.0 --port 8000
 # or: python -m pickleball_track.api
 ```
 
-Docker (artifacts are mounted, not baked into the image):
+Docker (GPU; needs the NVIDIA Container Toolkit). `vendor/unilm` must be cloned
+first (it is copied into the image); the weights are mounted read-only:
 
 ```bash
-docker build -t pickleball-track .   # build context: score_video_block/
-docker run -p 8888:8888 --env-file .env \
-  -v $PWD/src/weights:/app/src/weights -v $PWD/vendor/unilm:/app/vendor/unilm \
-  pickleball-track
+docker compose up -d --build      # builds pickleball-track:gpu, serves :8888
+docker compose logs -f            # wait for "Models loaded"
+curl localhost:8888/ready
 ```
+
+`docker-compose.yml` sets `--gpus`, `shm_size: 1gb` (preprocessing workers),
+`env_file: .env` and the weights volume. The image keeps the repository layout
+under `/app` (`PYTHONPATH=/app/src`), so relative paths in `.env` work unchanged.
+CPU-only image: `docker build --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cpu -t pickleball-track .`
+and run it with `--shm-size=1g -e PICKLEBALL_DEVICE=cpu`.
 
 Command-line inference on a local file (writes `<video>.inference.json`):
 

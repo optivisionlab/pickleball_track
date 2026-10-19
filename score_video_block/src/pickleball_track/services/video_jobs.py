@@ -82,12 +82,20 @@ class VideoJobService:
         if self.predictor is None:
             raise ServiceUnavailableError("Model checkpoint is not configured or unavailable")
 
+        endpoint = self.settings.minio_public_endpoint or minio_endpoint
+        if endpoint != minio_endpoint:
+            logger.info(
+                "Using configured MinIO endpoint",
+                extra={"job_id": job_id, "requested_endpoint": minio_endpoint, "endpoint": endpoint},
+            )
         try:
-            client = self.minio_client_factory(minio_endpoint, self.settings)
+            client = self.minio_client_factory(endpoint, self.settings)
             with tempfile.TemporaryDirectory(prefix="pickleball-video-") as temp_dir:
                 local_video = Path(temp_dir) / f"input{suffix}"
                 self._check_size(client.stat_object(bucket, object_key).size)
+                download_started_at = time.perf_counter()
                 client.fget_object(bucket, object_key, str(local_video))
+                download_seconds = time.perf_counter() - download_started_at
                 self._check_size(local_video.stat().st_size)
                 result = self.predictor.predict(local_video)
         except PickleballError:
@@ -110,6 +118,7 @@ class VideoJobService:
                 "hit_count": job_score.hit_count,
                 "miss_count": job_score.miss_count,
                 "score": job_score.score,
+                "download_seconds": round(download_seconds, 4),
                 "duration_seconds": round(time.perf_counter() - started_at, 4),
             },
         )

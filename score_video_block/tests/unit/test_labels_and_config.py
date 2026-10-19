@@ -32,6 +32,7 @@ def test_default_settings_use_the_runtime_weights_directory(monkeypatch):
     for name in (
         "PICKLEBALL_CHECKPOINT", "PICKLEBALL_BEATS_CHECKPOINT", "PICKLEBALL_BEATS_ROOT",
         "PICKLEBALL_VIDEOMAE", "PICKLEBALL_DEVICE", "PICKLEBALL_MAX_VIDEO_BYTES",
+        "PICKLEBALL_BATCH_SIZE", "PICKLEBALL_PRECISION", "PICKLEBALL_GPU_PREPROCESS",
     ):
         monkeypatch.delenv(name, raising=False)
     settings = Settings.from_env()
@@ -41,6 +42,7 @@ def test_default_settings_use_the_runtime_weights_directory(monkeypatch):
     assert settings.beats_checkpoint == WEIGHTS_DIR / "BEATs_iter3_plus_AS2M.pt"
     assert Path(settings.videomae) == WEIGHTS_DIR / "videomae-base"
     assert settings.device == "auto"
+    assert (settings.batch_size, settings.precision, settings.gpu_preprocess) == (0, "auto", False)
 
 
 def test_settings_read_environment(monkeypatch, tmp_path):
@@ -48,7 +50,11 @@ def test_settings_read_environment(monkeypatch, tmp_path):
     monkeypatch.setenv("PICKLEBALL_BEATS_ROOT", "vendor/other")
     monkeypatch.setenv("PICKLEBALL_DEVICE", " CPU ")
     monkeypatch.setenv("PICKLEBALL_MAX_VIDEO_BYTES", "1024")
+    monkeypatch.setenv("PICKLEBALL_BATCH_SIZE", "24")
+    monkeypatch.setenv("PICKLEBALL_PRECISION", " BF16 ")
+    monkeypatch.setenv("PICKLEBALL_GPU_PREPROCESS", "1")
     monkeypatch.setenv("MINIO_SECURE", "true")
+    monkeypatch.setenv("MINIO_PUBLIC_ENDPOINT", " 100.116.40.89:9000 ")
     monkeypatch.setenv("MINIO_ROOT_USER", "user")
     monkeypatch.setenv("MINIO_ROOT_PASSWORD", "password")
     monkeypatch.delenv("MINIO_ACCESS_KEY", raising=False)
@@ -60,7 +66,9 @@ def test_settings_read_environment(monkeypatch, tmp_path):
     assert settings.beats_root == WEIGHTS_DIR.parents[1] / "vendor" / "other"
     assert settings.device == "cpu"
     assert settings.max_video_bytes == 1024
+    assert (settings.batch_size, settings.precision, settings.gpu_preprocess) == (24, "bf16", True)
     assert settings.minio_secure is True
+    assert settings.minio_public_endpoint == "100.116.40.89:9000"
     assert (settings.minio_access_key, settings.minio_secret_key) == ("user", "password")
     assert "password" not in repr(settings)
 
@@ -78,7 +86,7 @@ def test_inference_hyperparameters_read_environment(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "overrides", [{"max_video_bytes": 0}, {"device": "tpu"}]
+    "overrides", [{"max_video_bytes": 0}, {"device": "tpu"}, {"batch_size": -1}, {"precision": "int8"}]
 )
 def test_invalid_settings_are_rejected(overrides):
     with pytest.raises(ValueError):

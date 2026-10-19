@@ -1,4 +1,7 @@
-"""Video/audio decoding and sliding-window preparation matching training."""
+"""Video metadata, audio decoding and sliding-window preparation matching training.
+
+Frame decoding and VideoMAE preprocessing live in ``frames.py``.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +12,6 @@ from pathlib import Path
 import cv2
 import numpy as np
 import torch
-from transformers import VideoMAEImageProcessor
 
 from ..core.config import AUDIO_SR, OVERLAP
 from .resample import resample
@@ -54,48 +56,6 @@ def build_windows(num_frames: int, num_window_frames: int, overlap: float = OVER
     if starts[-1] != last_start:
         starts.append(last_start)
     return starts
-
-
-def read_video_window(
-    video_path: str | Path,
-    start_frame: int,
-    num_frames: int,
-    image_processor: VideoMAEImageProcessor,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Return VideoMAE pixel values (1, F, C, H, W) and a per-frame validity mask.
-
-    Frames past the end of the video repeat the last frame and are marked invalid.
-    """
-    capture = cv2.VideoCapture(str(video_path))
-    if not capture.isOpened():
-        raise RuntimeError(f"Cannot open video: {video_path}")
-
-    capture.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
-    frames = []
-    valid = []
-    for _ in range(num_frames):
-        ok, frame = capture.read()
-        if not ok:
-            # The padding loop below marks the missing frames. (The original script also
-            # appended False here, giving 33 flags for 32 frames and crashing the reshape.)
-            break
-        frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-        valid.append(True)
-    capture.release()
-
-    if not frames:
-        raise RuntimeError(f"Cannot read frames at {start_frame}")
-    while len(frames) < num_frames:
-        frames.append(frames[-1])
-        valid.append(False)
-
-    inputs = image_processor(frames, return_tensors="pt")
-    pixel_values = inputs["pixel_values"]
-    if pixel_values.ndim != 5:
-        raise RuntimeError(
-            f"Unexpected VideoMAE input shape: {tuple(pixel_values.shape)}"
-        )
-    return pixel_values, torch.tensor(valid, dtype=torch.bool)
 
 
 def _run(command: list[str]) -> bytes:

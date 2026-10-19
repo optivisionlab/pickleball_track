@@ -49,3 +49,19 @@ def test_encoder_pools_spatial_tokens_and_masks_padded_tubelets():
     assert features.dtype == torch.float32
     # Tubelets cover 2 frames: frames 0-5 touch tubelets 0-2.
     assert padding.tolist() == [[False] * 3 + [True] * 13]
+
+
+def test_batched_windows_match_single_window_calls():
+    encoder = VideoEncoder(build_tiny_videomae(), torch.device("cpu"))
+    torch.manual_seed(1)
+    pixel_values = torch.randn(3, NUM_VIDEO_FRAMES, 3, 32, 32)
+    frame_valid = torch.ones(3, NUM_VIDEO_FRAMES, dtype=torch.bool)
+    frame_valid[2, 20:] = False
+
+    features, padding = encoder(pixel_values, frame_valid)
+
+    assert features.shape == (3, NUM_TEMPORAL_TOKENS, TINY_VIDEO_DIM)
+    for i in range(3):
+        single, single_padding = encoder(pixel_values[i:i + 1], frame_valid[i])
+        assert torch.allclose(features[i], single[0], atol=1e-5)
+        assert torch.equal(padding[i], single_padding[0])

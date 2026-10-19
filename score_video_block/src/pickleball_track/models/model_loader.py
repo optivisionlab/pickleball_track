@@ -22,8 +22,14 @@ from typing import Any
 import torch
 from transformers import VideoMAEImageProcessor, VideoMAEModel
 
-from ..core.config import AUDIO_SR, LABEL2ID, WEIGHTS_DIR, Settings
+from ..core.config import AUDIO_SR, LABEL2ID, NUM_VIDEO_FRAMES, WEIGHTS_DIR, Settings
 from ..core.exceptions import ModelLoadError
+from ..pipelines.frames import (
+    FramePreprocessor,
+    ProcessFramePool,
+    TorchFrames,
+    default_preprocess_workers,
+)
 from .architecture import AVFeatureModel
 from .components.audio_encoder import AudioEncoder
 from .components.video_encoder import VideoEncoder, adapt_videomae_to_frame_count
@@ -40,6 +46,28 @@ class ModelBundle:
     video_encoder: VideoEncoder
     audio_encoder: AudioEncoder
     fusion_model: AVFeatureModel
+    # Sliding windows per forward pass.
+    batch_size: int = 1
+    # None: exact Hugging Face processor on the CPU.
+    frame_preprocessor: FramePreprocessor | None = None
+    # Exact preprocessing on worker processes; used when frame_preprocessor is None.
+    frame_pool: ProcessFramePool | None = None
+
+    def close(self) -> None:
+        """Stop preprocessing workers; the bundle must not be used afterwards."""
+        if self.frame_pool is not None:
+            self.frame_pool.close()
+
+
+# Defaults for PICKLEBALL_BATCH_SIZE=0. 16 windows of 32 frames use ~2-3 GB on the
+# GPU in fp16; larger batches give no further speedup on an A30 because frame
+# decoding, not the GPU, is then the bottleneck.
+DEFAULT_BATCH_SIZE = {"cuda": 16, "cpu": 4}
+
+_AMP_DTYPES = {"fp16": torch.float16, "bf16": torch.bfloat16}
+
+VIDEOMAE_CONFIG_FILES = ("config.json", "preprocessor_config.json")
+VIDEOMAE_WEIGHTS_FILE = "model.safetensors"
 
 
 def resolve_device(device_name: str) -> torch.device:
@@ -53,6 +81,24 @@ def resolve_device(device_name: str) -> torch.device:
     if device_name == "cuda" and not torch.cuda.is_available():
         raise RuntimeError("PICKLEBALL_DEVICE=cuda but CUDA is unavailable")
     return torch.device(device_name)
+
+
+def resolve_precision(precision: str, device: torch.device) -> torch.dtype | None:
+    """Autocast dtype for VideoMAE, or None for fp32. Reduced precision is CUDA-only."""
+    if precision == "auto":
+        return torch.float16 if device.type == "cuda" else None
+    if precision == "fp32":
+        return None
+    if precision not in _AMP_DTYPES:
+        raise ValueError("PICKLEBALL_PRECISION must be auto, fp32, fp16, or bf16")
+    if device.type != "cuda":
+        logger.warning("Reduced precision needs CUDA; running in fp32", extra={"precision": precision})
+        return None
+    return _AMP_DTYPES[precision]
+
+
+def resolve_batch_size(batch_size: int, device: torch.device) -> int:
+    return batch_size if batch_size > 0 else DEFAULT_BATCH_SIZE[device.type]
 
 
 def _is_remote_model_id(source: str) -> bool:
@@ -75,16 +121,49 @@ def missing_model_assets(settings: Settings) -> list[str]:
 
     videomae_path = Path(settings.videomae).expanduser()
     if videomae_path.is_dir():
-        if not (videomae_path / "config.json").is_file():
+        # Files that ensure_videomae_files() can still download are not missing.
+        downloadable = bool(settings.videomae_repo)
+        if not (videomae_path / "config.json").is_file() and not downloadable:
             missing.append(f"VideoMAE config not found in {videomae_path}")
-        has_weights = any(videomae_path.glob("*.safetensors")) or any(
-            videomae_path.glob("pytorch_model*.bin")
-        )
-        if not has_weights:
+        if not _has_videomae_weights(videomae_path) and not downloadable:
             missing.append(f"VideoMAE weights not found in {videomae_path}")
     elif not _is_remote_model_id(settings.videomae):
         missing.append(f"VideoMAE model path not found: {videomae_path}")
     return missing
+
+
+def _has_videomae_weights(directory: Path) -> bool:
+    return any(directory.glob("*.safetensors")) or any(directory.glob("pytorch_model*.bin"))
+
+
+def ensure_videomae_files(settings: Settings) -> None:
+    """Download absent VideoMAE files from ``settings.videomae_repo`` into the local directory.
+
+    Only missing files are fetched; existing configs (which define the trained
+    preprocessing) are never overwritten.
+    """
+    directory = Path(settings.videomae).expanduser()
+    if not settings.videomae_repo or not directory.is_dir():
+        return
+    wanted = [name for name in VIDEOMAE_CONFIG_FILES if not (directory / name).is_file()]
+    if not _has_videomae_weights(directory):
+        wanted.append(VIDEOMAE_WEIGHTS_FILE)
+    if not wanted:
+        return
+
+    from huggingface_hub import hf_hub_download
+
+    for filename in wanted:
+        logger.info(
+            "Downloading VideoMAE file",
+            extra={"repo": settings.videomae_repo, "file": filename, "directory": str(directory)},
+        )
+        try:
+            hf_hub_download(settings.videomae_repo, filename, local_dir=directory)
+        except Exception as exc:
+            raise ModelLoadError(
+                f"Cannot download {filename} from {settings.videomae_repo} into {directory}: {exc}"
+            ) from exc
 
 
 def _freeze(model: torch.nn.Module, device: torch.device) -> None:
@@ -175,18 +254,42 @@ def _beats_feature_dim(audio_encoder: AudioEncoder) -> int:
     return int(features.shape[-1])
 
 
+@torch.inference_mode()
+def warmup(bundle: ModelBundle, fps: float = 30.0) -> None:
+    """Run one full batch so CUDA/cuBLAS initialization is not paid by the first request.
+
+    cuDNN autotuning (``cudnn.benchmark``) is left off: it gave no steady-state
+    speedup on an A30 and re-tunes for every new batch size, e.g. the last batch.
+    """
+    crop = bundle.processor.crop_size
+    batch = bundle.batch_size
+    pixel_values = torch.zeros(batch, NUM_VIDEO_FRAMES, 3, int(crop["height"]), int(crop["width"]))
+    frame_valid = torch.ones(batch, NUM_VIDEO_FRAMES, dtype=torch.bool)
+    samples = int(round(NUM_VIDEO_FRAMES / fps * AUDIO_SR))
+    segment = torch.zeros(batch, samples)
+    padding_mask = torch.zeros(batch, samples, dtype=torch.bool)
+    video_features, temporal_padding = bundle.video_encoder(pixel_values, frame_valid)
+    audio_features, audio_padding = bundle.audio_encoder(segment, padding_mask)
+    bundle.fusion_model(video_features, audio_features, audio_padding, temporal_padding)
+    if bundle.device.type == "cuda":
+        torch.cuda.synchronize(bundle.device)
+
+
 def load_models(settings: Settings) -> ModelBundle:
     """Load all artifacts and verify that backbones match the trained checkpoint."""
+    ensure_videomae_files(settings)
     missing = missing_model_assets(settings)
     if missing:
         raise ModelLoadError("; ".join(missing))
 
     device = resolve_device(settings.device)
+    amp_dtype = resolve_precision(settings.precision, device)
+    batch_size = resolve_batch_size(settings.batch_size, device)
     videomae, processor = load_videomae(settings.videomae, device)
     beats = load_beats(settings.beats_root, settings.beats_checkpoint, device)
     fusion_model = load_trained_model(settings.checkpoint_path, device)
 
-    video_encoder = VideoEncoder(videomae, device)
+    video_encoder = VideoEncoder(videomae, device, amp_dtype)
     audio_encoder = AudioEncoder(beats, device)
     audio_dim = _beats_feature_dim(audio_encoder)
     if fusion_model.video_proj.net[0].in_features != video_encoder.hidden_size:
@@ -200,11 +303,31 @@ def load_models(settings: Settings) -> ModelBundle:
             f"audio_dim {fusion_model.audio_proj.net[0].in_features}"
         )
 
-    logger.info("Models loaded", extra={"device": str(device)})
-    return ModelBundle(
+    frame_preprocessor = (
+        TorchFrames(processor, device) if settings.gpu_preprocess and device.type == "cuda" else None
+    )
+    workers = default_preprocess_workers(settings.preprocess_workers)
+    frame_pool = ProcessFramePool(processor, workers) if frame_preprocessor is None and workers else None
+    logger.info(
+        "Models loaded",
+        extra={
+            "device": str(device),
+            "videomae_precision": str(amp_dtype or torch.float32),
+            "batch_size": batch_size,
+            "gpu_preprocessing": frame_preprocessor is not None,
+            "preprocess_workers": frame_pool.workers if frame_pool else 0,
+        },
+    )
+    bundle = ModelBundle(
         device=device,
         processor=processor,
         video_encoder=video_encoder,
         audio_encoder=audio_encoder,
         fusion_model=fusion_model,
+        batch_size=batch_size,
+        frame_preprocessor=frame_preprocessor,
+        frame_pool=frame_pool,
     )
+    if device.type == "cuda":
+        warmup(bundle)
+    return bundle

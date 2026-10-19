@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -31,9 +31,17 @@ def label_from_id(label_id: int) -> str:
 
 
 def aggregate_predictions(
-    window_predictions: Sequence[WindowPrediction], fps: float
+    window_predictions: Sequence[WindowPrediction],
+    fps: float,
+    frame_time: Callable[[float], float] | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Average predictions from overlapping windows at the same time."""
+    """Average predictions from overlapping windows at the same time.
+
+    ``frame_time`` maps a frame index to seconds (default ``index / fps``).
+    """
+    if frame_time is None:
+        def frame_time(index: float) -> float:
+            return index / fps
     votes = defaultdict(list)
     frames_per_token = NUM_VIDEO_FRAMES // NUM_TEMPORAL_TOKENS
 
@@ -44,7 +52,7 @@ def aggregate_predictions(
                 start_frame + token_idx * frames_per_token
                 + frames_per_token / 2.0
             )
-            key = round(float(center_frame / fps), 4)
+            key = round(float(frame_time(center_frame)), 4)
             votes[key].append(item.probs[token_idx])
 
     times = sorted(votes)

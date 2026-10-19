@@ -7,8 +7,10 @@
 *.crt
 *.log
 
-__pycache__
-*.pyc
+**/__pycache__
+**/*.pyc
+*.egg-info
+src/*.egg-info
 .pytest_cache
 .mypy_cache
 .ruff_cache
@@ -25,7 +27,9 @@ tests
 docs
 LICENSE
 
+# Weights are mounted at runtime (see docker-compose.yml).
 src/weights
+scripts
 
 # Nested git checkout of microsoft/unilm (not needed at runtime)
 vendor/unilm/.git

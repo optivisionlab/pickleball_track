@@ -48,8 +48,10 @@ def create_app(
         finally:
             models = getattr(app.state.inference_service, "models", None)
             app.state.inference_service = None
-            if models is not None and models.device.type == "cuda":
-                torch.cuda.empty_cache()
+            if models is not None:
+                models.close()
+                if models.device.type == "cuda":
+                    torch.cuda.empty_cache()
 
     app = FastAPI(title="Pickleball AI Pipeline", version="1.0.0", lifespan=lifespan)
     app.state.settings = settings

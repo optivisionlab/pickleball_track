@@ -42,6 +42,10 @@ SUPPORTED_VIDEO_SUFFIXES = frozenset({".mp4", ".mov"})
 
 SUPPORTED_DEVICES = frozenset({"auto", "cpu", "cuda"})
 
+# auto: fp16 autocast for VideoMAE on CUDA, fp32 on CPU. BEATs and the fusion
+# model always run in fp32 (BEATs' fbank overflows fp16).
+SUPPORTED_PRECISIONS = frozenset({"auto", "fp32", "fp16", "bf16"})
+
 
 # =========================
 # INFERENCE HYPERPARAMETERS (tunable)
@@ -113,9 +117,24 @@ class Settings:
     beats_root: Path = PROJECT_ROOT / "vendor" / "unilm"
     # Local directory, or a Hugging Face model id downloaded into WEIGHTS_DIR.
     videomae: str = str(WEIGHTS_DIR / "videomae-base")
+    # Hub repo whose weights are downloaded into a local ``videomae`` directory that
+    # has none yet; empty disables the download (offline deployments).
+    videomae_repo: str = "MCG-NJU/videomae-base"
     device: str = "auto"
+    # Sliding windows per forward pass; 0 picks a default for the device.
+    batch_size: int = 0
+    precision: str = "auto"
+    # Resize/normalize frames on the GPU: ~20% faster end to end, but pixels may
+    # differ from the training-time PIL preprocessing by one 8-bit level.
+    gpu_preprocess: bool = False
+    # Worker processes resizing frames (exact, shared memory); 0 uses threads in
+    # this process, which the GIL limits to ~150 frames/s.
+    preprocess_workers: int = 8
     max_video_bytes: int = 512 * 1024 * 1024
     minio_secure: bool = False
+    # When set, always connect here instead of the request's minio_endpoint (which
+    # the backend may fill with a host name only resolvable on its own network).
+    minio_public_endpoint: str | None = None
     minio_access_key: str | None = field(default=None, repr=False)
     minio_secret_key: str | None = field(default=None, repr=False)
     log_level: str = "INFO"
@@ -126,6 +145,12 @@ class Settings:
             raise ValueError("PICKLEBALL_MAX_VIDEO_BYTES must be a positive integer")
         if self.device not in SUPPORTED_DEVICES:
             raise ValueError("PICKLEBALL_DEVICE must be auto, cpu, or cuda")
+        if self.batch_size < 0:
+            raise ValueError("PICKLEBALL_BATCH_SIZE must be >= 0 (0 = auto)")
+        if self.preprocess_workers < 0:
+            raise ValueError("PICKLEBALL_PREPROCESS_WORKERS must be >= 0")
+        if self.precision not in SUPPORTED_PRECISIONS:
+            raise ValueError("PICKLEBALL_PRECISION must be auto, fp32, fp16, or bf16")
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -141,11 +166,19 @@ class Settings:
                 os.getenv("PICKLEBALL_BEATS_ROOT", str(defaults.beats_root))
             ),
             videomae=os.getenv("PICKLEBALL_VIDEOMAE", defaults.videomae),
+            videomae_repo=os.getenv("PICKLEBALL_VIDEOMAE_REPO", defaults.videomae_repo).strip(),
             device=os.getenv("PICKLEBALL_DEVICE", defaults.device).strip().lower(),
+            batch_size=int(os.getenv("PICKLEBALL_BATCH_SIZE", str(defaults.batch_size))),
+            precision=os.getenv("PICKLEBALL_PRECISION", defaults.precision).strip().lower(),
+            gpu_preprocess=_env_bool("PICKLEBALL_GPU_PREPROCESS", defaults.gpu_preprocess),
+            preprocess_workers=int(
+                os.getenv("PICKLEBALL_PREPROCESS_WORKERS", str(defaults.preprocess_workers))
+            ),
             max_video_bytes=int(
                 os.getenv("PICKLEBALL_MAX_VIDEO_BYTES", str(defaults.max_video_bytes))
             ),
             minio_secure=_env_bool("MINIO_SECURE", defaults.minio_secure),
+            minio_public_endpoint=os.getenv("MINIO_PUBLIC_ENDPOINT", "").strip() or None,
             minio_access_key=os.getenv("MINIO_ACCESS_KEY") or os.getenv("MINIO_ROOT_USER"),
             minio_secret_key=os.getenv("MINIO_SECRET_KEY") or os.getenv("MINIO_ROOT_PASSWORD"),
             log_level=os.getenv("LOG_LEVEL", defaults.log_level).upper(),

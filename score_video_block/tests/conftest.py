@@ -34,6 +34,7 @@ def test_settings(tmp_path) -> Settings:
         beats_checkpoint=tmp_path / "missing_beats.pt",
         beats_root=tmp_path / "missing_unilm",
         videomae=str(tmp_path / "missing_videomae"),
+        videomae_repo="",
         device="cpu",
         max_video_bytes=1024 * 1024,
         minio_access_key="test-access",

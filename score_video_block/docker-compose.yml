@@ -1,0 +1,29 @@
+# GPU deployment of the scoring API: docker compose up -d --build
+services:
+  pickleball-score:
+    build:
+      context: .
+      # CPU-only image: TORCH_INDEX: https://download.pytorch.org/whl/cpu (and drop `deploy`).
+      args:
+        TORCH_INDEX: https://download.pytorch.org/whl/cu128
+    image: pickleball-track:gpu
+    container_name: pickleball-score
+    env_file: .env
+    ports:
+      - "8888:8888"
+    volumes:
+      # best.pt, BEATs and videomae-base. Read-only once videomae-base/model.safetensors
+      # exists; drop ":ro" (and make the directory writable by uid 10001) to let
+      # the service download it on first start.
+      - ./src/weights:/app/src/weights:ro
+    # Frame preprocessing workers exchange frames through /dev/shm (Docker's
+    # default is 64 MB; ~10 MB per worker is needed for 1080p video).
+    shm_size: 1gb
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
