@@ -623,6 +623,8 @@ def add_common_args(parser, artifacts_root: str, version_artifacts: str, cfg) ->
     parser.add_argument("--rebuild-features", action="store_true")
     parser.add_argument("--check-only", action="store_true",
                         help="Only validate the 1-1 mapping and exit.")
+    parser.add_argument("--extract-only", action="store_true",
+                        help="Validate the mapping, build the shared feature cache, and exit.")
 
 
 def prepare(args, device: torch.device):
@@ -634,7 +636,8 @@ def prepare(args, device: torch.device):
         json.dump(report, handle, indent=2)
     if args.check_only:
         return None
-    return extract_features(
+    data = extract_features(
         rows, args.feature_cache_dir, args.videomae, args.beats_checkpoint, args.beats_root,
         device, args.extract_batch_size, args.workers, args.audio_tokens, args.rebuild_features,
     )
+    return None if args.extract_only else data

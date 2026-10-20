@@ -6,4 +6,4 @@ weights/
 __pycache__/
 *.pyc
 unilm/
-docker/
+docker/logs/
