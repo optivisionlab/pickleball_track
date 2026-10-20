@@ -3,3 +3,4 @@ splits/
 runs/
 logs/
 custom_preds_*.csv
+batch_sizes.json

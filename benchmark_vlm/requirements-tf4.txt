@@ -1,0 +1,11 @@
+# Env vlm-tf4: remote-code models written for transformers 4.x (MiniCPM-V 4.0 / 4.5, Keye-VL-1.5).
+# On transformers 5 MiniCPM-V loads but its vision tower gives garbage, so these run on 4.51.
+#   conda create -n vlm-tf4 --clone score-video
+#   /data/miniconda/envs/vlm-tf4/bin/python -m pip install -r requirements-tf4.txt
+#   # Keye asserts flash-attn is installed; build it for the A30 (sm_80):
+#   PATH=/usr/local/cuda-12.8/bin:$PATH CUDA_HOME=/usr/local/cuda-12.8 FLASH_ATTN_CUDA_ARCHS=80 MAX_JOBS=8 \
+#     /data/miniconda/envs/vlm-tf4/bin/python -m pip install flash-attn==2.8.3.post2 --no-build-isolation
+# (clone of score-video = requirements.txt already installed; these pins override it)
+transformers==4.51.3
+huggingface_hub==0.36.2
+tokenizers==0.21.4
