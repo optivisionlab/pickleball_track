@@ -1,0 +1,24 @@
+# Zero-shot VLM benchmark (benchmark_vlm/), conda env: score-video (Python 3.11, CUDA 12.8)
+#   /data/miniconda/envs/score-video/bin/python -m pip install -r requirements.txt
+# Versions are the ones tested on the A30.
+# Note: Qwen3.5 needs transformers 5.x; score_video_block pins transformers<5 but does not import it.
+--extra-index-url https://download.pytorch.org/whl/cu128
+
+torch==2.10.0+cu128
+torchvision==0.25.0+cu128
+transformers==5.20.2
+accelerate==1.15.0
+huggingface_hub==2.2.0
+qwen-vl-utils[decord]==0.0.14
+decord==0.6.0
+numpy==2.4.6
+pandas==3.0.6
+scikit-learn==1.9.0          # same as the training env: StratifiedGroupKFold must give the same folds
+statsmodels==0.15.0
+scipy==1.17.1
+pillow==12.3.0
+opencv-python-headless==5.0.0.93   # used by export_custom_preds.py (baseline benchmark_common imports cv2)
+tqdm==4.70.1
+
+# Optional, faster attention (not installed; script falls back to sdpa):
+# flash-attn --no-build-isolation
