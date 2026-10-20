@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -305,6 +307,46 @@ class TemporalPredictionHead(nn.Module):
         return self.net(x)
 
 
+class TextAnchoredHead(nn.Module):
+    """
+    Classify every temporal token by its similarity to a text description of
+    each class: logits[b,t,c] = scale * cos(video_bt, text_c) + bias_c.
+
+    class_text: [C, text_dim] (or [B, C, text_dim], first row used), one CLIP
+    embedding per class. It describes the classes, never the sample.
+    """
+
+    def __init__(self, dim, text_dim, hidden_dim=256, num_classes=3, dropout=0.3,
+                 init_temperature=0.07):
+        super().__init__()
+        self.num_classes = num_classes
+        self.video = nn.Sequential(
+            nn.Linear(dim, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, hidden_dim),
+        )
+        self.text = nn.Sequential(
+            nn.LayerNorm(text_dim),
+            nn.Linear(text_dim, hidden_dim),
+        )
+        self.logit_scale = nn.Parameter(torch.tensor(math.log(1.0 / init_temperature)))
+        self.bias = nn.Parameter(torch.zeros(num_classes))
+
+    def forward(self, x, class_text):
+        if class_text.ndim == 3:
+            class_text = class_text[0]
+        if class_text.shape[0] != self.num_classes:
+            raise ValueError(
+                f"class_text must have one row per class ({self.num_classes}), "
+                f"got {tuple(class_text.shape)}."
+            )
+        video = F.normalize(self.video(x), dim=-1)
+        text = F.normalize(self.text(class_text.to(x.dtype)), dim=-1)
+        scale = self.logit_scale.exp().clamp(max=100.0)
+        return scale * video @ text.t() + self.bias
+
+
 class AVTFeatureModel(nn.Module):
     """
     VIDEO + AUDIO + TEXT TRAINING MODEL.
@@ -401,8 +443,19 @@ class AVTFeatureModel(nn.Module):
         head_dropout=0.3,
         num_classes=3,
         temporal_length=16,
+        head_type="mlp",
     ):
+        """
+        head_type:
+            "mlp"  - classic MLP head (used by the NSVA benchmark).
+            "text" - TextAnchoredHead: logits from similarity with the
+                     per-class text descriptions passed as class_text.
+        """
         super().__init__()
+
+        if head_type not in ("mlp", "text"):
+            raise ValueError(f"Unknown head_type: {head_type}")
+        self.head_type = head_type
 
         # ---------------------------------------------------------
         # Modality projections
@@ -468,12 +521,21 @@ class AVTFeatureModel(nn.Module):
         # ---------------------------------------------------------
         # Temporal prediction
         # ---------------------------------------------------------
-        self.head = TemporalPredictionHead(
-            dim=fusion_dim,
-            hidden_dim=head_hidden_dim,
-            num_classes=num_classes,
-            dropout=head_dropout,
-        )
+        if head_type == "text":
+            self.head = TextAnchoredHead(
+                dim=fusion_dim,
+                text_dim=text_dim,
+                hidden_dim=head_hidden_dim,
+                num_classes=num_classes,
+                dropout=head_dropout,
+            )
+        else:
+            self.head = TemporalPredictionHead(
+                dim=fusion_dim,
+                hidden_dim=head_hidden_dim,
+                num_classes=num_classes,
+                dropout=head_dropout,
+            )
 
         self._assert_all_trainable()
 
@@ -497,6 +559,7 @@ class AVTFeatureModel(nn.Module):
         temporal_padding_mask,
         text_features,
         text_padding_mask=None,
+        class_text=None,
     ):
         """
         Args:
@@ -525,21 +588,23 @@ class AVTFeatureModel(nn.Module):
                     [B, Tv]
 
             text_features:
-                Precomputed CLIP text features.
-
-                Accepted shapes:
-                    [B, text_dim]
-                    [B, 1, text_dim]
+                Precomputed CLIP text features used as cross-attention
+                context: one prompt [B, 1, text_dim] / [B, text_dim], or
+                several tokens [B, Tc, text_dim] (e.g. one per class).
 
             text_padding_mask:
                 Optional text padding mask.
 
                 Shape:
-                    [B, 1]
+                    [B, Tc]
 
                 True = padding.
 
                 If omitted, text is considered valid for every sample.
+
+            class_text:
+                [C, text_dim] class descriptions, required when
+                head_type == "text".
 
         Returns:
             logits:
@@ -572,16 +637,12 @@ class AVTFeatureModel(nn.Module):
         if text_features.ndim != 3:
             raise ValueError(
                 "text_features must have shape "
-                "[B, 1, text_dim] or [B, text_dim]. "
+                "[B, Tc, text_dim] or [B, text_dim]. "
                 f"Got {tuple(text_features.shape)}."
             )
 
-        if text_features.shape[1] != 1:
-            raise ValueError(
-                "For this architecture, text must contain one "
-                "global context token per sample: [B, 1, text_dim]. "
-                f"Got {tuple(text_features.shape)}."
-            )
+        if self.head_type == "text" and class_text is None:
+            raise ValueError("head_type='text' requires class_text [C, text_dim].")
 
         # ---------------------------------------------------------
         # Project modalities into common dimension
@@ -641,9 +702,10 @@ class AVTFeatureModel(nn.Module):
         # ---------------------------------------------------------
         # Per-temporal-token prediction
         # ---------------------------------------------------------
-        logits = self.head(x)
+        if self.head_type == "text":
+            return self.head(x, class_text)
 
-        return logits
+        return self.head(x)
 
 
 class TemporalFocalLoss(nn.Module):

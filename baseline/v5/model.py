@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Optional
 
 import torch
@@ -58,16 +59,23 @@ class TextConditionedGatedFusion(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, video: torch.Tensor, text: torch.Tensor) -> torch.Tensor:
+        """text: one global vector [B,D] or one vector per video token [B,T,D]."""
         if video.ndim != 3:
             raise ValueError(f"video must be [B,T,D], got {tuple(video.shape)}")
-        if text.ndim != 2:
-            raise ValueError(f"text must be [B,D], got {tuple(text.shape)}")
-        if video.shape[0] != text.shape[0] or video.shape[-1] != text.shape[-1]:
+        if text.ndim == 2:
+            if video.shape[0] != text.shape[0] or video.shape[-1] != text.shape[-1]:
+                raise ValueError(
+                    f"Video/text shape mismatch: {tuple(video.shape)} vs {tuple(text.shape)}"
+                )
+            text_expanded = text.unsqueeze(1).expand(-1, video.shape[1], -1)
+        elif text.ndim == 3 and text.shape == video.shape:
+            text_expanded = text
+        else:
             raise ValueError(
-                f"Video/text shape mismatch: {tuple(video.shape)} vs {tuple(text.shape)}"
+                f"text must be [B,D] or [B,T,D] matching video {tuple(video.shape)}, "
+                f"got {tuple(text.shape)}"
             )
 
-        text_expanded = text.unsqueeze(1).expand(-1, video.shape[1], -1)
         gate = self.gate(torch.cat([video, text_expanded], dim=-1))
 
         fused = video + gate * self.text_scale * text_expanded
@@ -159,6 +167,43 @@ class TemporalPredictionHead(nn.Module):
         return self.net(x)
 
 
+class TextAnchoredHead(nn.Module):
+    """
+    Classify every temporal token by its similarity to a text description of
+    each class: logits[b,t,c] = scale * cos(video_bt, text_c) + bias_c.
+
+    class_text: [C, text_dim] (or [B, C, text_dim], first row used), one CLIP
+    embedding per class. It describes the classes, never the sample.
+    """
+
+    def __init__(self, dim: int, text_dim: int, hidden_dim: int = 256,
+                 num_classes: int = NUM_CLASSES, dropout: float = 0.3,
+                 init_temperature: float = 0.07):
+        super().__init__()
+        self.num_classes = num_classes
+        self.video = nn.Sequential(
+            nn.Linear(dim, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, hidden_dim),
+        )
+        self.text = nn.Sequential(nn.LayerNorm(text_dim), nn.Linear(text_dim, hidden_dim))
+        self.logit_scale = nn.Parameter(torch.tensor(math.log(1.0 / init_temperature)))
+        self.bias = nn.Parameter(torch.zeros(num_classes))
+
+    def forward(self, x: torch.Tensor, class_text: torch.Tensor) -> torch.Tensor:
+        if class_text.ndim == 3:
+            class_text = class_text[0]
+        if class_text.shape[0] != self.num_classes:
+            raise ValueError(
+                f"class_text must have one row per class ({self.num_classes}), "
+                f"got {tuple(class_text.shape)}"
+            )
+        video = F.normalize(self.video(x), dim=-1)
+        text = F.normalize(self.text(class_text.to(x.dtype)), dim=-1)
+        return self.logit_scale.exp().clamp(max=100.0) * video @ text.t() + self.bias
+
+
 class VideoTextFeatureModel(nn.Module):
     """
     Video + Text temporal event classifier.
@@ -193,19 +238,43 @@ class VideoTextFeatureModel(nn.Module):
         head_dropout: float = 0.3,
         num_classes: int = NUM_CLASSES,
         temporal_length: int = NUM_TEMPORAL_TOKENS,
+        text_tokens: int = 1,
+        head_type: str = "mlp",
     ):
+        """
+        text_tokens:
+            1  - one global text vector (NSVA benchmark prompt).
+            >1 - several text tokens (e.g. one description per class); every
+                 video token attends over them before the gated fusion.
+        head_type:
+            "mlp"  - classic MLP head.
+            "text" - TextAnchoredHead, needs class_text in forward().
+        """
         super().__init__()
+
+        if head_type not in ("mlp", "text"):
+            raise ValueError(f"Unknown head_type: {head_type}")
+        self.head_type = head_type
 
         self.video_proj = Projection(video_dim, fusion_dim, dropout)
         self.text_proj = Projection(text_dim, fusion_dim, dropout)
+        self.text_attn = (
+            nn.MultiheadAttention(fusion_dim, temporal_heads, dropout=dropout, batch_first=True)
+            if text_tokens > 1 else None
+        )
         self.fusion = TextConditionedGatedFusion(fusion_dim, dropout)
         self.temporal_pos = TemporalPositionalEncoding(temporal_length, fusion_dim)
         self.temporal = TemporalTransformer(
             fusion_dim, temporal_heads, temporal_layers, dropout
         )
-        self.head = TemporalPredictionHead(
-            fusion_dim, head_hidden_dim, num_classes, head_dropout
-        )
+        if head_type == "text":
+            self.head = TextAnchoredHead(
+                fusion_dim, text_dim, head_hidden_dim, num_classes, head_dropout
+            )
+        else:
+            self.head = TemporalPredictionHead(
+                fusion_dim, head_hidden_dim, num_classes, head_dropout
+            )
 
     def forward(
         self,
@@ -213,6 +282,7 @@ class VideoTextFeatureModel(nn.Module):
         text_features: torch.Tensor,
         temporal_padding_mask: Optional[torch.Tensor] = None,
         return_features: bool = False,
+        class_text: Optional[torch.Tensor] = None,
     ):
         if video_features.ndim != 3:
             raise ValueError(
@@ -224,21 +294,29 @@ class VideoTextFeatureModel(nn.Module):
                 f"got {video_features.shape[1]}"
             )
 
-        # CLIP cached feature may be [B,1,D].
-        if text_features.ndim == 3:
-            if text_features.shape[1] != 1:
-                raise ValueError(
-                    "This model expects one global text token [B,1,D]."
-                )
+        # One global prompt may come as [B,1,D]; several tokens need text_attn.
+        if text_features.ndim == 3 and text_features.shape[1] == 1:
             text_features = text_features[:, 0]
+        if text_features.ndim == 3 and self.text_attn is None:
+            raise ValueError(
+                "Several text tokens need the model built with text_tokens > 1."
+            )
+        if self.head_type == "text" and class_text is None:
+            raise ValueError("head_type='text' requires class_text [C, text_dim].")
 
         video = self.video_proj(video_features)
         text = self.text_proj(text_features)
+        if text.ndim == 3:
+            # Each video token gathers the class descriptions it resembles.
+            text, _ = self.text_attn(video, text, text, need_weights=False)
 
         fused = self.fusion(video, text)
         fused = self.temporal_pos(fused)
         temporal = self.temporal(fused, temporal_padding_mask)
-        logits = self.head(temporal)
+        if self.head_type == "text":
+            logits = self.head(temporal, class_text)
+        else:
+            logits = self.head(temporal)
 
         if return_features:
             return logits, {
