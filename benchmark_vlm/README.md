@@ -41,6 +41,16 @@ Lưu ý khi đọc kết quả: clip của `val_fold1` nằm trong tập test c�
 
 ## Kết quả smoke (10 clip, 16f/448)
 
-- Không lỗi, `mean_letter_mass` = 0.9999, ~1.7 s/clip, VRAM đỉnh 9.7 GB trên A30.
+- Không lỗi, `mean_letter_mass` = 0.9999, VRAM đỉnh 9.7 GB (1 clip/lần) trên A30.
 - Model nhìn thấy video (mô tả đúng cảnh), nhưng zero-shot có xu hướng trả lời gần như mọi clip là `made`.
+
+## Tốc độ / batch
+
+- `eval_vlm.py run` xử lý `--batch-size` clip mỗi lần forward (mặc định 8) và dùng `--workers` tiến trình CPU (mặc định 16, mỗi tiến trình 1 thread) để giải mã video trước cho GPU.
+- Giải mã video (~1.2 s/clip với decord) là nút cổ chai chính, không phải GPU. Batch 8: VRAM đỉnh ~13.7 GB, ~1.3–1.5 clip/s (bản chạy từng clip: ~0.58 clip/s). Batch 16: ~14.7 GB nhưng không nhanh hơn khi CPU bận.
+- Kết quả batch giống chạy từng clip (64 clip: cùng nhãn dự đoán, chênh xác suất tối đa 0.03 do bf16).
+- Đổi qua biến môi trường: `BATCH=16 WORKERS=24 ./run_benchmark.sh test`. Nếu batch bị OOM, script tự chạy lại từng clip.
+
+## Ghi chú
+
 - Qwen3.5 chạy kernel PyTorch dự phòng cho các lớp linear-attention (thiếu `causal_conv1d` / `flash-linear-attention`): kết quả đúng, chỉ chậm hơn.

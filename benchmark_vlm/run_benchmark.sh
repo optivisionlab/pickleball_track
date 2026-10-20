@@ -11,6 +11,8 @@
 #   test     best config on splits/test.csv = all 5 test folds, resumable (step 5)
 #   compare  per-clip predictions of custom v3/v4/v5, then McNemar vs the VLM (step 6)
 # Extra arguments after the stage go to every eval_vlm.py run, e.g. ./run_benchmark.sh test --attn sdpa
+# BATCH (clips per forward pass, default 8) and WORKERS (CPU decode workers, default 16):
+#   BATCH=16 WORKERS=24 ./run_benchmark.sh test
 set -euo pipefail
 source /data/miniconda/etc/profile.d/conda.sh
 conda activate score-video
@@ -21,6 +23,9 @@ shift || true
 MODEL="${MODEL:-Qwen/Qwen3.5-4B}"
 BASELINE_DIR="${BASELINE_DIR:-/data/Cuong/pickleball/pickleball_track/baseline}"
 VAL_CSV=splits/val_fold1.csv
+BATCH="${BATCH:-8}"
+WORKERS="${WORKERS:-16}"
+RUN_ARGS=(--model "$MODEL" --batch-size "$BATCH" --workers "$WORKERS")
 mkdir -p runs logs
 
 want() { [[ "$STAGE" == all || "$STAGE" == "$1" ]]; }
@@ -30,7 +35,7 @@ if want splits; then
 fi
 
 if want smoke; then
-    python eval_vlm.py run --csv "$VAL_CSV" --out runs/smoke --model "$MODEL" --limit 10 "$@"
+    python eval_vlm.py run --csv "$VAL_CSV" --out runs/smoke "${RUN_ARGS[@]}" --limit 10 "$@"
 fi
 
 # name:num_frames:max_pixels   (200704 = 448x448, 307200 = 640x480)
@@ -40,7 +45,7 @@ if want val; then
     for c in "${CONFIGS[@]}"; do
         IFS=: read -r name nf mp <<< "$c"
         echo "== $name"
-        python eval_vlm.py run --csv "$VAL_CSV" --out "runs/$name" --model "$MODEL" \
+        python eval_vlm.py run --csv "$VAL_CSV" --out "runs/$name" "${RUN_ARGS[@]}" \
             --num-frames "$nf" --max-pixels "$mp" --resume "$@" 2>&1 | tee "logs/$name.log"
     done
     python - "${CONFIGS[@]}" <<'EOF'
@@ -58,7 +63,7 @@ if want test; then
     [[ -f runs/best_config.txt ]] || { echo "run the val stage first" >&2; exit 1; }
     IFS=: read -r name nf mp < runs/best_config.txt
     echo "== test with $name (num_frames=$nf, max_pixels=$mp)"
-    python eval_vlm.py run --csv splits/test.csv --out runs/test_final --model "$MODEL" \
+    python eval_vlm.py run --csv splits/test.csv --out runs/test_final "${RUN_ARGS[@]}" \
         --num-frames "$nf" --max-pixels "$mp" --resume "$@" 2>&1 | tee logs/test_final.log
 fi
 
