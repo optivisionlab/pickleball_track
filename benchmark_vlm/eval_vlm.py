@@ -319,6 +319,8 @@ def summary(args):
     rows = [row_from(f"custom {v}", d, {"group": "custom", "status": "done"}) for v, d in ref.items()]
     for d in sorted(glob.glob(os.path.join(args.runs, "*", ""))):
         name = os.path.basename(os.path.normpath(d))
+        if name in args.exclude.split(","):
+            continue
         info = {}
         if os.path.isfile(os.path.join(d, "model.json")):
             info = json.load(open(os.path.join(d, "model.json")))
@@ -397,6 +399,7 @@ if __name__ == "__main__":
     s = sub.add_parser("summary")
     s.add_argument("--csv", default="splits/test.csv")
     s.add_argument("--runs", default="runs")
+    s.add_argument("--exclude", default="minicpm-v-4.5", help="comma-separated run names to leave out")
     s.add_argument("--custom-dir", default=".", help="folder with custom_preds_v3/v4/v5.csv")
     s.add_argument("--out", default="runs/model_comparison", help="writes OUT.csv and OUT.md")
     s.add_argument("--n-boot", type=int, default=1000)

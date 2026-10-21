@@ -8,7 +8,14 @@ Làm theo `Guide.md` + `eval_vlm.py` gốc, chạy nhiều model đa phương th
 STAGES=smoke ./run_models.sh            # chỉ chạy thử 10 clip mỗi model
 ```
 
-Kết quả so sánh: **`runs/model_comparison.md`** (và `.csv`), cập nhật sau mỗi model. Có thể tạo lại bất cứ lúc nào bằng `python eval_vlm.py summary`.
+Kết quả so sánh: **`runs/comparison.md`** (một file duy nhất). Tạo lại sau khi có model mới hoặc custom model được train lại:
+
+```bash
+git -C ../../pickleball_track archive baseline_shot1 baseline | tar -x -C /tmp/bs1   # code baseline_shot1
+/data/miniconda/envs/anything/bin/python make_report.py --baseline-dir /tmp/bs1/baseline
+```
+
+(`run_models.sh` vẫn tự ghi `runs/model_comparison.md` sau mỗi model như bảng tạm.)
 
 ## Model
 
@@ -67,13 +74,19 @@ Danh sách, batch size và VRAM cần cho từng model nằm ở đầu `run_mod
 | 4 | 806 | 1629 |
 | 5 | 820 | 1638 |
 
-`export_custom_preds.py` xuất dự đoán từng clip của v3/v4/v5 từ `best.pt` mỗi fold (khớp số đã lưu: v3 0.8195 ± 0.0045).
+`export_custom_preds.py` xuất dự đoán từng clip của v3/v4/v5 từ `best.pt` mỗi fold (dùng cho McNemar). **Phải chạy lại sau mỗi lần train lại custom model**, nếu không so sánh sẽ dùng dự đoán cũ:
+
+```bash
+for v in v3 v4 v5; do python export_custom_preds.py --baseline-dir /tmp/bs1/baseline --version $v --out custom_preds_$v.csv --output-dir /data/Cuong/pickleball/artifacts/weights_basketball/$v; done
+```
 
 Lưu ý khi đọc kết quả: clip của `val_fold1` nằm trong tập test của fold 2–5. Model không được train, chỉ chọn 1 trong 3 cấu hình, nên ảnh hưởng nhỏ; con số sạch hoàn toàn là cột `fold1_f1`.
 
-## Bảng so sánh (`runs/model_comparison.md`)
+## Bảng so sánh (`runs/comparison.md`, từ `make_report.py`)
 
-Mỗi dòng một model (kể cả custom v3/v4/v5): macro-F1 + CI 95%, mean ± std theo fold, F1 fold 1, accuracy, F1 từng lớp, AUC, p-value McNemar so với v3, `mean_letter_mass`, tốc độ (clip/s), VRAM đỉnh, cấu hình được chọn và trạng thái (`done` / `failed: ...` / `not run`).
+- **Summary**: mỗi dòng một model: số tham số khi infer (tổng / phần được train), macro-F1 và accuracy mean ± std qua 5 fold, Δ macro-F1 so với custom v3 / v4 / v5 (`*` = McNemar p < 0.05), F1 từng lớp, tốc độ (clip/s).
+- **Per fold**: macro-F1 / accuracy từng fold. Custom lấy kết quả test của best epoch mỗi fold (`weights_basketball/<v>/fold_k/result.json`); VLM tính lại từ `predictions.csv`.
+- Số tham số custom = VideoMAE-base + BEATs (v3, v4) + CLIP text (v4, v5) + head đã train, đếm từ weight thật; VLM đếm từ safetensors (bỏ phần MTP của Qwen3.5 vì không load khi infer).
 
 ## Tốc độ / batch
 
