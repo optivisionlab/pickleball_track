@@ -141,3 +141,60 @@ def test_configured_public_endpoint_overrides_the_request(test_settings, public_
     _process(service)
 
     assert endpoints == [expected]
+
+
+class FakeRangeClient(FakeMinioClient):
+    """Serves ranged GETs like MinIO's get_object(offset=, length=)."""
+
+    def __init__(self, payload):
+        super().__init__(reported_size=len(payload), payload=payload)
+        self.ranges = []
+
+    def get_object(self, bucket, object_key, offset=0, length=0):
+        self.ranges.append((offset, length))
+        data = self.payload[offset:offset + length]
+
+        class Response:
+            def stream(self, amt):
+                for i in range(0, len(data), 3):
+                    yield data[i:i + 3]
+
+            def close(self):
+                pass
+
+            def release_conn(self):
+                pass
+
+        return Response()
+
+
+class ContentPredictor(RecordingPredictor):
+    def predict(self, video_path):
+        self.content = Path(video_path).read_bytes()
+        return super().predict(video_path)
+
+
+def test_large_video_is_downloaded_with_parallel_ranges(test_settings):
+    from dataclasses import replace
+
+    payload = bytes(range(256)) * 4  # 1024 bytes
+    client, predictor = FakeRangeClient(payload), ContentPredictor()
+    settings = replace(test_settings, download_parts=4, download_part_min_bytes=100)
+
+    _process(_service(settings, predictor, client))
+
+    assert predictor.content == payload
+    assert sorted(client.ranges) == [(0, 256), (256, 256), (512, 256), (768, 256)]
+    assert client.downloads == []
+
+
+def test_small_video_uses_a_single_request(test_settings):
+    from dataclasses import replace
+
+    client, predictor = FakeRangeClient(b"tiny video"), ContentPredictor()
+    settings = replace(test_settings, download_parts=4, download_part_min_bytes=100)
+
+    _process(_service(settings, predictor, client))
+
+    assert predictor.content == b"tiny video"
+    assert client.ranges == [] and len(client.downloads) == 1

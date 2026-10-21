@@ -108,6 +108,12 @@ variables take precedence.
 | `PICKLEBALL_GPU_PREPROCESS` | `false` | Resize/normalize frames on the GPU (pixels may differ by one 8-bit level) |
 | `PICKLEBALL_PREPROCESS_WORKERS` | `8` | Exact frame preprocessing processes (shared memory); `0` = threads in the API process |
 | `PICKLEBALL_MAX_VIDEO_BYTES` | `536870912` | Maximum MinIO object size |
+| `PICKLEBALL_INFERENCE_SLOTS` | `2` | Videos analysed at the same time; each slot has its own `PICKLEBALL_PREPROCESS_WORKERS` processes (~210 MB of `/dev/shm` at 1080p) and shares the loaded models |
+| `PICKLEBALL_MAX_PENDING_JOBS` | `8` | Requests accepted at once (downloading, waiting for a slot or running); more get `429` |
+| `PICKLEBALL_BUSY_RETRY_AFTER_SECONDS` | `10` | `Retry-After` sent with `429` |
+| `PICKLEBALL_DOWNLOAD_PARTS` | `4` | Parallel range requests per video download |
+| `PICKLEBALL_DOWNLOAD_PART_MIN_BYTES` | `8388608` | Smallest part; smaller videos use one request |
+| `PICKLEBALL_RESULT_CACHE_SECONDS` | `600` | Completed results kept by `job_id` for client retries; `0` disables |
 | `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` | unset | MinIO credentials (or `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`) |
 | `MINIO_SECURE` | `false` | TLS for an endpoint given without scheme |
 | `MINIO_PUBLIC_ENDPOINT` | unset | If set, always download from this endpoint instead of the request's `minio_endpoint` |
@@ -208,6 +214,7 @@ python scripts/infer_video.py --video match.mp4 [--checkpoint best.pt --hit-thre
 | `GET /health` | `200 {"status": "ok"}` | – |
 | `GET /ready` | `200 {"status": "ready"}` when models are loaded | `503` |
 | `POST /api/v1/process` | `200` job response | see below |
+| `GET /stats` | `200` slots, pending jobs and cached results | – |
 
 Request (only `.mp4` / `.mov` object keys are accepted):
 
@@ -249,8 +256,28 @@ Response:
 Errors use FastAPI's `{"detail": "..."}` body: `422` invalid request, unsupported
 video type or invalid `minio_endpoint`; `413` video too large; `503` model not
 loaded or MinIO not configured; `502` download or inference failure (including
-unreadable video or missing audio track). Failures are never reported as
-`no_event`.
+unreadable video or missing audio track); `429` with `Retry-After` when
+`PICKLEBALL_MAX_PENDING_JOBS` requests are already in progress. Failures are never
+reported as `no_event`.
+
+### Concurrency
+
+The endpoint is `async`: each job runs on a dedicated executor (download, then a free
+inference slot), so waiting requests hold no event-loop thread. Up to
+`PICKLEBALL_INFERENCE_SLOTS` videos are analysed at once; frame decoding is
+CPU-bound, so a second slot keeps the GPU busy while the first decodes. Beyond
+`PICKLEBALL_MAX_PENDING_JOBS` the service answers `429` + `Retry-After` immediately
+instead of letting requests queue until the client times out.
+
+A request whose `job_id` (same bucket/object) is already running waits for that run,
+and completed results are cached for `PICKLEBALL_RESULT_CACHE_SECONDS`: a client that
+retries after a timeout or a dropped connection gets the result without a second
+inference. Jobs are not cancelled when the client disconnects.
+
+The backend (`haui_sict_fitness_score`) treats `429`/`503` with `Retry-After` as busy
+(waits and resends without spending its retry budget) and scales its timeout with
+video duration and file size. Keep its `AI_MAX_CONCURRENCY` × worker replicas at or
+below `PICKLEBALL_MAX_PENDING_JOBS`.
 
 ## Tests
 

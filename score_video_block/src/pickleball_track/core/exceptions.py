@@ -17,6 +17,14 @@ class ServiceUnavailableError(PickleballError):
     """A required model or dependency is not configured or not loaded (503)."""
 
 
+class ServiceBusyError(PickleballError):
+    """Too many requests in progress; the client should retry after ``retry_after`` (429)."""
+
+    def __init__(self, message: str, retry_after: int):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
 class ProcessingError(PickleballError):
     """Downloading the video or running inference failed (502)."""
 

@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import logging
+import os
 import tempfile
 import time
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
@@ -72,6 +74,38 @@ class VideoJobService:
         if size > self.settings.max_video_bytes:
             raise PayloadTooLargeError("Video exceeds the configured size limit")
 
+    def _download(self, client: Any, bucket: str, object_key: str, destination: Path, size: int) -> None:
+        """Download with parallel range requests; small objects use a single request."""
+        parts = min(self.settings.download_parts, size // max(1, self.settings.download_part_min_bytes))
+        if parts < 2:
+            client.fget_object(bucket, object_key, str(destination))
+            return
+        part_size = -(-size // parts)
+
+        def fetch(index: int) -> None:
+            offset = index * part_size
+            length = min(part_size, size - offset)
+            response = client.get_object(bucket, object_key, offset=offset, length=length)
+            try:
+                written = 0
+                with open(destination, "r+b") as out:
+                    out.seek(offset)
+                    for chunk in response.stream(1024 * 1024):
+                        out.write(chunk)
+                        written += len(chunk)
+                if written != length:
+                    raise ProcessingError("Incomplete video download")
+            finally:
+                response.close()
+                response.release_conn()
+
+        with open(destination, "wb") as out:
+            out.truncate(size)
+        with ThreadPoolExecutor(max_workers=parts, thread_name_prefix="minio-range") as pool:
+            list(pool.map(fetch, range(parts)))
+        if os.path.getsize(destination) != size:
+            raise ProcessingError("Incomplete video download")
+
     def process(
         self, *, job_id: str, bucket: str, object_key: str, minio_endpoint: str
     ) -> JobScore:
@@ -92,9 +126,10 @@ class VideoJobService:
             client = self.minio_client_factory(endpoint, self.settings)
             with tempfile.TemporaryDirectory(prefix="pickleball-video-") as temp_dir:
                 local_video = Path(temp_dir) / f"input{suffix}"
-                self._check_size(client.stat_object(bucket, object_key).size)
+                size = client.stat_object(bucket, object_key).size
+                self._check_size(size)
                 download_started_at = time.perf_counter()
-                client.fget_object(bucket, object_key, str(local_video))
+                self._download(client, bucket, object_key, local_video, size)
                 download_seconds = time.perf_counter() - download_started_at
                 self._check_size(local_video.stat().st_size)
                 result = self.predictor.predict(local_video)

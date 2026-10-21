@@ -4,6 +4,7 @@ from fastapi import Request
 
 from ..core.config import Settings
 from ..services.inference_service import VideoInferenceService
+from ..services.job_gate import JobGate
 from ..services.video_jobs import VideoJobService
 
 
@@ -21,3 +22,7 @@ def get_video_job_service(request: Request) -> VideoJobService:
         predictor=request.app.state.inference_service,
         minio_client_factory=request.app.state.minio_client_factory,
     )
+
+
+def get_job_gate(request: Request) -> JobGate:
+    return request.app.state.job_gate

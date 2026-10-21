@@ -15,6 +15,7 @@ from ..core.logging import configure_logging
 from ..integrations.minio import create_minio_client
 from ..models.model_loader import load_models
 from ..services.inference_service import VideoInferenceService
+from ..services.job_gate import JobGate
 from .errors import register_exception_handlers
 from .routes import health, inference
 
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 def _default_inference_factory(settings: Settings) -> VideoInferenceService:
-    return VideoInferenceService(load_models(settings), settings.inference)
+    return VideoInferenceService(load_models(settings), settings.inference, slots=settings.inference_slots)
 
 
 def create_app(
@@ -43,9 +44,16 @@ def create_app(
         except Exception:
             logger.exception("Model loading failed; service is not ready")
             app.state.inference_service = None
+        app.state.job_gate = JobGate(
+            settings.max_pending_jobs, settings.busy_retry_after_seconds, settings.result_cache_seconds
+        )
         try:
             yield
         finally:
+            app.state.job_gate.close()
+            close_slots = getattr(app.state.inference_service, "close", None)
+            if close_slots is not None:
+                close_slots()
             models = getattr(app.state.inference_service, "models", None)
             app.state.inference_service = None
             if models is not None:

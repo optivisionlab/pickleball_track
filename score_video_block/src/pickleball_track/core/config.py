@@ -131,6 +131,21 @@ class Settings:
     # this process, which the GIL limits to ~150 frames/s.
     preprocess_workers: int = 8
     max_video_bytes: int = 512 * 1024 * 1024
+    # Videos analysed at the same time. Each slot has its own preprocessing workers
+    # (preprocess_workers processes, ~210 MB of /dev/shm at 1080p) and shares the
+    # loaded models; decoding is CPU-bound, so 2 slots keep the GPU busier.
+    inference_slots: int = 2
+    # Requests accepted at once (downloading, waiting for a slot or running);
+    # beyond this /api/v1/process answers 429 with Retry-After instead of queueing.
+    max_pending_jobs: int = 8
+    busy_retry_after_seconds: int = 10
+    # Parallel HTTP range requests per video download; only for objects of at least
+    # two parts. A relayed (high-latency) MinIO link gains ~1.5x with 4 parts.
+    download_parts: int = 4
+    download_part_min_bytes: int = 8 * 1024 * 1024
+    # Completed results kept by job_id, so a client retry after a lost response or a
+    # timeout gets the result instead of a second inference; 0 disables.
+    result_cache_seconds: int = 600
     minio_secure: bool = False
     # When set, always connect here instead of the request's minio_endpoint (which
     # the backend may fill with a host name only resolvable on its own network).
@@ -151,6 +166,14 @@ class Settings:
             raise ValueError("PICKLEBALL_PREPROCESS_WORKERS must be >= 0")
         if self.precision not in SUPPORTED_PRECISIONS:
             raise ValueError("PICKLEBALL_PRECISION must be auto, fp32, fp16, or bf16")
+        if self.inference_slots < 1:
+            raise ValueError("PICKLEBALL_INFERENCE_SLOTS must be >= 1")
+        if self.max_pending_jobs < self.inference_slots:
+            raise ValueError("PICKLEBALL_MAX_PENDING_JOBS must be >= PICKLEBALL_INFERENCE_SLOTS")
+        if self.download_parts < 1:
+            raise ValueError("PICKLEBALL_DOWNLOAD_PARTS must be >= 1")
+        if self.busy_retry_after_seconds < 1 or self.result_cache_seconds < 0:
+            raise ValueError("PICKLEBALL_BUSY_RETRY_AFTER_SECONDS must be >= 1, PICKLEBALL_RESULT_CACHE_SECONDS >= 0")
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -176,6 +199,18 @@ class Settings:
             ),
             max_video_bytes=int(
                 os.getenv("PICKLEBALL_MAX_VIDEO_BYTES", str(defaults.max_video_bytes))
+            ),
+            inference_slots=int(os.getenv("PICKLEBALL_INFERENCE_SLOTS", str(defaults.inference_slots))),
+            max_pending_jobs=int(os.getenv("PICKLEBALL_MAX_PENDING_JOBS", str(defaults.max_pending_jobs))),
+            busy_retry_after_seconds=int(
+                os.getenv("PICKLEBALL_BUSY_RETRY_AFTER_SECONDS", str(defaults.busy_retry_after_seconds))
+            ),
+            download_parts=int(os.getenv("PICKLEBALL_DOWNLOAD_PARTS", str(defaults.download_parts))),
+            download_part_min_bytes=int(
+                os.getenv("PICKLEBALL_DOWNLOAD_PART_MIN_BYTES", str(defaults.download_part_min_bytes))
+            ),
+            result_cache_seconds=int(
+                os.getenv("PICKLEBALL_RESULT_CACHE_SECONDS", str(defaults.result_cache_seconds))
             ),
             minio_secure=_env_bool("MINIO_SECURE", defaults.minio_secure),
             minio_public_endpoint=os.getenv("MINIO_PUBLIC_ENDPOINT", "").strip() or None,

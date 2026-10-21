@@ -136,3 +136,51 @@ def test_invalid_minio_endpoint_returns_422(test_settings, valid_job_request):
 
     assert response.status_code == 422
     assert response.json() == {"detail": "minio_endpoint must use HTTP or HTTPS"}
+
+
+class BlockingInferenceService(FakeInferenceService):
+    def __init__(self):
+        super().__init__()
+        import threading
+
+        self.started = threading.Event()
+        self.release = threading.Event()
+
+    def predict(self, video_path):
+        self.started.set()
+        self.release.wait(timeout=10)
+        return super().predict(video_path)
+
+
+def test_overloaded_service_returns_429_with_retry_after(test_settings, valid_job_request):
+    import threading
+
+    inference = BlockingInferenceService()
+    settings = replace(test_settings, inference_slots=1, max_pending_jobs=1, busy_retry_after_seconds=9)
+    with _client(settings, inference=inference) as client:
+        first = {}
+        worker = threading.Thread(
+            target=lambda: first.setdefault("response", client.post("/api/v1/process", json=valid_job_request))
+        )
+        worker.start()
+        assert inference.started.wait(timeout=10)
+        busy = client.post("/api/v1/process", json=valid_job_request | {"job_id": "job-2"})
+        stats = client.get("/stats").json()
+        inference.release.set()
+        worker.join(timeout=10)
+
+    assert busy.status_code == 429
+    assert busy.headers["Retry-After"] == "9"
+    assert busy.json() == {"detail": "Server busy: 1 videos already in progress"}
+    assert stats["pending_jobs"] == 1 and stats["max_pending_jobs"] == 1
+    assert first["response"].status_code == 200
+
+
+def test_retried_job_id_reuses_the_result(test_settings, valid_job_request):
+    inference = FakeInferenceService()
+    with _client(test_settings, inference=inference) as client:
+        responses = [client.post("/api/v1/process", json=valid_job_request) for _ in range(2)]
+
+    assert [r.status_code for r in responses] == [200, 200]
+    assert responses[0].json() == responses[1].json()
+    assert inference.calls == 1

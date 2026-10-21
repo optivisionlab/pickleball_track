@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import logging
+import queue
 import time
 from collections.abc import Iterator
 from contextlib import closing
 from pathlib import Path
-from threading import Lock
 from typing import Any
 
 import torch
@@ -16,6 +16,7 @@ from ..core.config import NUM_VIDEO_FRAMES, InferenceParams
 from ..models.model_loader import ModelBundle
 from ..pipelines.frames import (
     FrameTimeline,
+    ProcessFramePool,
     ProcessorFrames,
     WindowBatch,
     iter_frames,
@@ -40,12 +41,38 @@ logger = logging.getLogger(__name__)
 
 
 class VideoInferenceService:
-    """Holds loaded models; calls are serialized so the device is never shared concurrently."""
+    """Holds loaded models and runs up to ``slots`` videos at the same time.
 
-    def __init__(self, models: ModelBundle, params: InferenceParams = InferenceParams()):
+    The models are shared (inference-mode forwards keep no state). A
+    ``ProcessFramePool`` serves one video at a time, so every slot owns one; the
+    first slot reuses the bundle's pool. Extra callers wait for a free slot.
+    """
+
+    def __init__(self, models: ModelBundle, params: InferenceParams = InferenceParams(), slots: int = 1):
+        if slots < 1:
+            raise ValueError("slots must be >= 1")
         self.models = models
         self.params = params
-        self._lock = Lock()
+        self.slots = slots
+        self._extra_pools: list[ProcessFramePool] = []
+        self._free: queue.Queue[ProcessFramePool | None] = queue.Queue()
+        self._free.put(models.frame_pool)
+        for _ in range(slots - 1):
+            pool = None
+            if models.frame_pool is not None:
+                pool = ProcessFramePool(models.processor, models.frame_pool.workers)
+                self._extra_pools.append(pool)
+            self._free.put(pool)
+
+    @property
+    def busy_slots(self) -> int:
+        return self.slots - self._free.qsize()
+
+    def close(self) -> None:
+        """Stop the preprocessing workers of the extra slots (the bundle closes its own)."""
+        for pool in self._extra_pools:
+            pool.close()
+        self._extra_pools = []
 
     @torch.inference_mode()
     def predict_batch(
@@ -71,11 +98,14 @@ class VideoInferenceService:
         return torch.softmax(logits, dim=-1).float().cpu()
 
     def _frame_chunks(
-        self, video_path: Path, info: VideoInfo, timeline: FrameTimeline
+        self,
+        video_path: Path,
+        info: VideoInfo,
+        timeline: FrameTimeline,
+        pool: ProcessFramePool | None,
     ) -> Iterator[torch.Tensor]:
-        """Preprocessed frames in order: worker processes if available, else threads."""
+        """Preprocessed frames in order: the slot's worker processes if available, else threads."""
         models = self.models
-        pool = models.frame_pool
         if pool is not None and models.frame_preprocessor is None:
             if pool.fits(info.height, info.width):
                 yield from pool.chunks(video_path, timeline)
@@ -95,7 +125,9 @@ class VideoInferenceService:
             raise FileNotFoundError(video_path)
 
         models = self.models
-        with self._lock:
+        waited_at = time.perf_counter()
+        pool = self._free.get()
+        try:
             started_at = time.perf_counter()
             info = get_video_info(video_path)
             logger.info(
@@ -104,6 +136,7 @@ class VideoInferenceService:
                     "fps": info.fps,
                     "frames": info.num_frames,
                     "video_duration_seconds": info.duration,
+                    "slot_wait_seconds": round(started_at - waited_at, 4),
                 },
             )
 
@@ -124,7 +157,7 @@ class VideoInferenceService:
             window_predictions = []
             windows_started_at = time.perf_counter()
             # closing() stops decoding/preprocessing even if inference raises midway.
-            with closing(self._frame_chunks(video_path, info, timeline)) as chunks:
+            with closing(self._frame_chunks(video_path, info, timeline, pool)) as chunks:
                 batches = iter_window_batches(chunks, starts, NUM_VIDEO_FRAMES, models.batch_size)
                 for batch in batches:
                     probs = self.predict_batch(batch, waveform, timeline, window_duration)
@@ -147,4 +180,6 @@ class VideoInferenceService:
                     "duration_seconds": round(time.perf_counter() - started_at, 4),
                 },
             )
+        finally:
+            self._free.put(pool)
         return result
