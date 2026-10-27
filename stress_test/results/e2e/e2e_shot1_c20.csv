@@ -1,0 +1,21 @@
+ai_score,confirm_ms,e2e_ms,error,final_status,grading_error,grading_wait_ms,idx,poll_avg_ms,poll_count,put_minio_ms,result_id,start_offset_s,submit_total_ms,upload_url_ms
+10.0,203.9,3370.7,,completed,,3041.6,0,12.2,3,25.3,6ae0a8b951f26173baa3f5ec,0.0,329.1,99.9
+10.0,110.7,4881.0,,completed,,4069.6,1,15.9,4,554.1,6ae0a8b951f26173baa3f5ee,0.001,811.4,146.6
+10.0,81.8,7084.4,,completed,,6103.1,2,16.1,6,732.3,6ae0a8b951f26173baa3f5f0,0.002,981.3,167.2
+10.0,202.6,10473.7,,completed,,9362.6,3,38.0,9,749.5,6ae0a8b951f26173baa3f5f2,0.002,1111.1,159.0
+10.0,110.0,4990.3,,completed,,4052.2,4,12.0,4,664.6,6ae0a8b951f26173baa3f5f6,0.003,938.1,163.5
+10.0,108.1,3563.4,,completed,,3056.3,5,17.3,3,234.7,6ae0a8b951f26173baa3f5f4,0.003,507.1,164.3
+10.0,169.5,15578.5,,completed,,14499.2,6,34.0,14,688.3,6ae0a8b951f26173baa3f5f8,0.004,1079.3,221.5
+10.0,173.8,13544.5,,completed,,12467.1,7,36.7,12,735.2,6ae0a8b951f26173baa3f5fa,0.005,1077.4,168.4
+10.0,175.0,8230.6,,completed,,7130.9,8,18.0,7,746.6,6ae0a8b951f26173baa3f5fc,0.005,1099.7,178.0
+,141.8,,"confirm 500 {""success"":false,""code"":500,""message"":""Đã xảy ra lỗi máy chủ nội bộ. Vui lòng liên hệ quản trị viên."",""data"":null}",,,,9,,,787.3,,0.006,,206.6
+,140.9,,"confirm 500 {""success"":false,""code"":500,""message"":""Đã xảy ra lỗi máy chủ nội bộ. Vui lòng liên hệ quản trị viên."",""data"":null}",,,,10,,,696.9,,0.007,,310.7
+10.0,156.9,7251.0,,completed,,6178.0,11,28.6,6,738.0,6ae0a8b951f26173baa3f5fe,0.007,1073.0,178.1
+,167.9,,"confirm 500 {""success"":false,""code"":500,""message"":""Đã xảy ra lỗi máy chủ nội bộ. Vui lòng liên hệ quản trị viên."",""data"":null}",,,,12,,,793.2,,0.008,,206.8
+,156.8,,"confirm 500 {""success"":false,""code"":500,""message"":""Đã xảy ra lỗi máy chủ nội bộ. Vui lòng liên hệ quản trị viên."",""data"":null}",,,,13,,,791.9,,0.009,,209.4
+10.0,139.3,8224.9,,completed,,7159.0,14,21.3,7,621.6,6ae0a8b951f26173baa3f610,0.009,1065.9,305.0
+10.0,176.8,13538.4,,completed,,12365.0,15,28.0,12,784.5,6ae0a8b951f26173baa3f606,0.01,1173.5,212.2
+10.0,155.0,10325.1,,completed,,9247.4,16,26.0,9,709.8,6ae0a8b951f26173baa3f604,0.01,1077.7,212.9
+10.0,180.1,12525.0,,completed,,11353.1,17,29.9,11,680.0,6ae0a8b951f26173baa3f60e,0.011,1171.9,311.9
+10.0,167.9,15569.8,,completed,,14486.4,18,32.6,14,616.8,6ae0a8b951f26173baa3f60a,0.011,1083.4,298.8
+10.0,167.1,12521.2,,completed,,11349.2,19,28.7,11,691.5,6ae0a8b951f26173baa3f612,0.012,1172.0,313.3

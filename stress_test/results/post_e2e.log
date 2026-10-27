@@ -1,0 +1,30 @@
+post_shot1_c1 ok 5 / 5 wall 10.5 s | vid/min 28.5 | submit avg 79.1 p95 92.3 | grading avg 2025.8 max 2035.0 | e2e avg 2104.9 p95 2119.1 max 2119.8 []
+   GPU max: 98, 20264
+post_shot1_c5 ok 10 / 10 wall 7.3 s | vid/min 81.9 | submit avg 109.0 p95 214.9 | grading avg 3065.1 max 4083.2 | e2e avg 3174.0 p95 4285.3 max 4368.5 []
+   GPU max: 71, 20264
+post_shot1_c10 ok 20 / 20 wall 11.8 s | vid/min 101.97 | submit avg 201.2 p95 360.6 | grading avg 4737.5 max 7138.0 | e2e avg 4938.7 p95 6459.2 max 7551.3 []
+   GPU max: 97, 20264
+post_shot1_c20 ok 20 / 20 wall 12.2 s | vid/min 98.56 | submit avg 667.7 p95 934.9 | grading avg 7130.0 max 11278.7 | e2e avg 7797.7 p95 12166.8 max 12170.4 []
+   GPU max: 92, 20264
+post_shot2_c3 ok 3 / 3 wall 154.5 s | vid/min 1.17 | submit avg 4138.6 p95 4233.5 | grading avg 112949.3 max 150520.3 | e2e avg 117087.9 p95 148890.2 max 154502.2 []
+   GPU max: 100, 20264
+post_shot2_c6 ok 6 / 6 wall 302.5 s | vid/min 1.19 | submit avg 5393.1 p95 5783.2 | grading avg 194730.9 max 296757.3 | e2e avg 200124.0 p95 301008.7 max 302543.1 []
+   GPU max: 100, 20266
+######## mixed peak
+GET /api/auth/me                              3993    0.0     34.5     8.0    62.0   130.0    479.2    1430    13.37
+GET /api/enrollments/my-courses               3979    0.0     52.7    18.0   102.0   183.0    589.7    1407    13.36
+GET /api/notifications                        3904    0.0     42.9    16.0    85.0   139.8    498.9    1340    13.34
+GET /api/sports                               3925    0.0     40.8    15.0    88.6   139.8    407.8    1329    13.37
+GET /api/tasks                                3966    0.0     57.1    22.0   113.5   195.8    499.1    1342    13.36
+GET /api/video-results                        3953    0.0     56.9    22.0   113.0   186.4    586.4    1454    13.37
+GET /api/video-results/{id}/status            3941  39.99     36.4     9.0    70.0   131.0    550.0    1301    13.38
+                                             errors: {'400': 1576}
+TOTAL                                        27661    5.7     45.9    17.0    93.0   159.0    513.0    1454    92.57
+                                             errors: {'400': 1576}
+peak haui-fitness-backend-1           cpu=  209.9%  mem= 37.9% of limit
+peak haui-fitness-mongodb-1           cpu=  151.7%  mem= 17.6% of limit
+peak GPU util=100%  mem=20266MiB
+container events: none
+post_mixed_shot1 ok 40 / 40 wall 52.0 s | vid/min 46.15 | submit avg 313.7 p95 835.9 | grading avg 4724.3 max 6528.2 | e2e avg 5038.0 p95 6439.7 max 6933.2 []
+post_mixed_shot2 ok 2 / 2 wall 118.6 s | vid/min 1.01 | submit avg 1738.6 p95 1807.5 | grading avg 116393.0 max 116819.3 | e2e avg 118131.6 p95 118584.2 max 118634.5 []
+ALL_DONE

@@ -1,0 +1,72 @@
+{
+ "label": "baseline",
+ "video": "shot1_b.mp4",
+ "size_mb": 4.1,
+ "duration_s": 3,
+ "concurrency": 1,
+ "total": 1,
+ "success": 1,
+ "errors": 0,
+ "wall_s": 2.1,
+ "throughput_videos_per_min": 28.54,
+ "upload_url_ms": {
+  "avg": 24.1,
+  "min": 24.1,
+  "p50": 24.1,
+  "p90": 24.1,
+  "p95": 24.1,
+  "max": 24.1
+ },
+ "put_minio_ms": {
+  "avg": 37.3,
+  "min": 37.3,
+  "p50": 37.3,
+  "p90": 37.3,
+  "p95": 37.3,
+  "max": 37.3
+ },
+ "confirm_ms": {
+  "avg": 19.5,
+  "min": 19.5,
+  "p50": 19.5,
+  "p90": 19.5,
+  "p95": 19.5,
+  "max": 19.5
+ },
+ "submit_total_ms": {
+  "avg": 80.8,
+  "min": 80.8,
+  "p50": 80.8,
+  "p90": 80.8,
+  "p95": 80.8,
+  "max": 80.8
+ },
+ "grading_wait_ms": {
+  "avg": 2021.3,
+  "min": 2021.3,
+  "p50": 2021.3,
+  "p90": 2021.3,
+  "p95": 2021.3,
+  "max": 2021.3
+ },
+ "e2e_ms": {
+  "avg": 2102.1,
+  "min": 2102.1,
+  "p50": 2102.1,
+  "p90": 2102.1,
+  "p95": 2102.1,
+  "max": 2102.1
+ },
+ "poll_avg_ms": {
+  "avg": 9.3,
+  "min": 9.3,
+  "p50": 9.3,
+  "p90": 9.3,
+  "p95": 9.3,
+  "max": 9.3
+ },
+ "error_samples": [],
+ "scores": [
+  10.0
+ ]
+}

@@ -1,0 +1,11 @@
+ai_score,confirm_ms,e2e_ms,final_status,grading_error,grading_wait_ms,idx,poll_avg_ms,poll_count,put_minio_ms,result_id,start_offset_s,submit_total_ms,upload_url_ms
+10.0,23.7,2146.4,completed,,2061.7,0,29.0,2,28.7,6ae0d4db202d858ddfcbc96b,0.0,84.7,32.2
+10.0,19.0,3178.4,completed,,3077.2,1,25.0,3,26.3,6ae0d4db7fc6e696fae4829f,0.001,101.2,55.9
+10.0,24.9,4171.6,completed,,4083.2,2,19.5,4,24.1,6ae0d4db2a8d4b974754007d,0.001,88.4,39.4
+10.0,19.5,4368.5,completed,,4061.0,3,14.2,4,236.5,6ae0d4db7fc6e696fae482a1,0.002,307.5,51.5
+10.0,17.7,4183.7,completed,,4081.9,4,19.1,4,42.8,6ae0d4db2a8d4b974754007f,0.002,101.8,41.3
+10.0,35.2,3161.2,completed,,3068.0,5,20.4,3,23.0,6ae0d4dd202d858ddfcbc970,2.147,93.2,35.0
+10.0,19.6,2131.0,completed,,2053.4,6,26.1,2,35.4,6ae0d4de202d858ddfcbc973,3.179,77.5,22.6
+10.0,25.8,3132.2,completed,,3055.8,7,16.8,3,22.3,6ae0d4df202d858ddfcbc977,4.173,76.4,28.2
+10.0,34.0,3139.6,completed,,3054.6,8,17.2,3,22.4,6ae0d4df7fc6e696fae482a5,4.186,85.0,28.7
+10.0,22.3,2127.6,completed,,2053.8,9,25.2,2,24.4,6ae0d4df202d858ddfcbc97a,4.37,73.8,27.1

@@ -1,0 +1,214 @@
+2026-10-27 20:51:13,704 INFO o.a.j.u.JMeterUtils: Setting Locale to en_EN
+2026-10-27 20:51:13,718 INFO o.a.j.JMeter: Loading user properties from: /opt/jmeter/bin/user.properties
+2026-10-27 20:51:13,719 INFO o.a.j.JMeter: Loading system properties from: /opt/jmeter/bin/system.properties
+2026-10-27 20:51:13,719 INFO o.a.j.JMeter: Setting JMeter property: threads=50
+2026-10-27 20:51:13,719 INFO o.a.j.JMeter: Setting JMeter property: ramp=10
+2026-10-27 20:51:13,719 INFO o.a.j.JMeter: Setting JMeter property: duration=60
+2026-10-27 20:51:13,719 INFO o.a.j.JMeter: Setting JMeter property: tokens=tokens.csv
+2026-10-27 20:51:13,719 INFO o.a.j.JMeter: Setting JMeter property: jmeter.save.saveservice.output_format=csv
+2026-10-27 20:51:13,727 INFO o.a.j.JMeter: Copyright (c) 1998-2024 The Apache Software Foundation
+2026-10-27 20:51:13,728 INFO o.a.j.JMeter: Version 5.6.3
+2026-10-27 20:51:13,728 INFO o.a.j.JMeter: java.version=17.0.20.1
+2026-10-27 20:51:13,728 INFO o.a.j.JMeter: java.vm.name=OpenJDK 64-Bit Server VM
+2026-10-27 20:51:13,728 INFO o.a.j.JMeter: os.name=Linux
+2026-10-27 20:51:13,728 INFO o.a.j.JMeter: os.arch=amd64
+2026-10-27 20:51:13,728 INFO o.a.j.JMeter: os.version=6.8.0-138-generic
+2026-10-27 20:51:13,728 INFO o.a.j.JMeter: file.encoding=UTF-8
+2026-10-27 20:51:13,728 INFO o.a.j.JMeter: java.awt.headless=true
+2026-10-27 20:51:13,728 INFO o.a.j.JMeter: Max memory     =1073741824
+2026-10-27 20:51:13,729 INFO o.a.j.JMeter: Available Processors =12
+2026-10-27 20:51:13,741 INFO o.a.j.JMeter: Default Locale=English (EN)
+2026-10-27 20:51:13,742 INFO o.a.j.JMeter: JMeter  Locale=English (EN)
+2026-10-27 20:51:13,742 INFO o.a.j.JMeter: JMeterHome=/opt/jmeter
+2026-10-27 20:51:13,742 INFO o.a.j.JMeter: user.dir  =/home/cuong/haui_loadtest/jmeter
+2026-10-27 20:51:13,742 INFO o.a.j.JMeter: PWD       =/home/cuong/haui_loadtest/jmeter
+2026-10-27 20:51:13,742 INFO o.a.j.JMeter: IP: 127.0.1.1 Name: cuong-Inspiron-15-3520 FullName: cuong-Inspiron-15-3520
+2026-10-27 20:51:13,758 INFO o.a.j.s.FileServer: Default base='/home/cuong/haui_loadtest/jmeter'
+2026-10-27 20:51:13,761 INFO o.a.j.s.FileServer: Set new base='/home/cuong/haui_loadtest/jmeter'
+2026-10-27 20:51:13,954 INFO o.a.j.s.SaveService: Testplan (JMX) version: 2.2. Testlog (JTL) version: 2.2
+2026-10-27 20:51:13,990 INFO o.a.j.s.SaveService: Using SaveService properties version 5.0
+2026-10-27 20:51:13,994 INFO o.a.j.s.SaveService: Using SaveService properties file encoding UTF-8
+2026-10-27 20:51:13,997 INFO o.a.j.s.SaveService: Loading file: be_user_flow_tok.jmx
+2026-10-27 20:51:14,062 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/html is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2026-10-27 20:51:14,062 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for application/xhtml+xml is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2026-10-27 20:51:14,062 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for application/xml is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2026-10-27 20:51:14,062 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/xml is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2026-10-27 20:51:14,062 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/vnd.wap.wml is org.apache.jmeter.protocol.http.parser.RegexpHTMLParser
+2026-10-27 20:51:14,062 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/css is org.apache.jmeter.protocol.http.parser.CssParser
+2026-10-27 20:51:14,079 INFO o.a.j.JMeter: Creating summariser <summary>
+2026-10-27 20:51:14,106 INFO o.a.j.e.StandardJMeterEngine: Running the test!
+2026-10-27 20:51:14,107 INFO o.a.j.s.SampleEvent: List of sample_variables: []
+2026-10-27 20:51:14,107 INFO o.a.j.s.SampleEvent: List of sample_variables: []
+2026-10-27 20:51:14,113 INFO o.a.j.e.u.CompoundVariable: Note: Function class names must contain the string: '.functions.'
+2026-10-27 20:51:14,113 INFO o.a.j.e.u.CompoundVariable: Note: Function class names must not contain the string: '.gui.'
+2026-10-27 20:51:14,173 INFO o.a.j.JMeter: Running test (1793109074173)
+2026-10-27 20:51:14,190 INFO o.a.j.e.StandardJMeterEngine: Starting ThreadGroup: 1 : BE student flow (pre-auth) users
+2026-10-27 20:51:14,190 INFO o.a.j.e.StandardJMeterEngine: Starting 50 threads for group BE student flow (pre-auth) users.
+2026-10-27 20:51:14,190 INFO o.a.j.e.StandardJMeterEngine: Thread will continue on error
+2026-10-27 20:51:14,190 INFO o.a.j.t.ThreadGroup: Starting thread group... number=1 threads=50 ramp-up=10 delayedStart=false
+2026-10-27 20:51:14,242 INFO o.a.j.t.ThreadGroup: Started thread group number 1
+2026-10-27 20:51:14,242 INFO o.a.j.e.StandardJMeterEngine: All thread groups have been started
+2026-10-27 20:51:14,320 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-1
+2026-10-27 20:51:14,326 INFO o.a.j.s.FileServer: Stored: tokens.csv
+2026-10-27 20:51:14,368 INFO o.a.j.p.h.s.HTTPHCAbstractImpl: Local host = cuong-Inspiron-15-3520
+2026-10-27 20:51:14,374 INFO o.a.j.p.h.s.HTTPHC4Impl: HTTP request retry count = 0
+2026-10-27 20:51:14,376 INFO o.a.j.s.SampleResult: Note: Sample TimeStamps are START times
+2026-10-27 20:51:14,376 INFO o.a.j.s.SampleResult: sampleresult.default.encoding is set to UTF-8
+2026-10-27 20:51:14,376 INFO o.a.j.s.SampleResult: sampleresult.useNanoTime=true
+2026-10-27 20:51:14,376 INFO o.a.j.s.SampleResult: sampleresult.nanoThreadSleep=5000
+2026-10-27 20:51:14,522 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-2
+2026-10-27 20:51:14,724 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-3
+2026-10-27 20:51:14,917 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-4
+2026-10-27 20:51:15,119 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-5
+2026-10-27 20:51:15,319 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-6
+2026-10-27 20:51:15,519 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-7
+2026-10-27 20:51:15,721 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-8
+2026-10-27 20:51:15,920 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-9
+2026-10-27 20:51:16,119 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-10
+2026-10-27 20:51:16,312 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-11
+2026-10-27 20:51:16,518 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-12
+2026-10-27 20:51:16,714 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-13
+2026-10-27 20:51:16,914 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-14
+2026-10-27 20:51:17,121 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-15
+2026-10-27 20:51:17,306 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-16
+2026-10-27 20:51:17,519 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-17
+2026-10-27 20:51:17,717 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-18
+2026-10-27 20:51:17,904 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-19
+2026-10-27 20:51:18,113 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-20
+2026-10-27 20:51:18,311 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-21
+2026-10-27 20:51:18,509 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-22
+2026-10-27 20:51:18,699 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-23
+2026-10-27 20:51:18,901 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-24
+2026-10-27 20:51:19,104 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-25
+2026-10-27 20:51:19,292 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-26
+2026-10-27 20:51:19,498 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-27
+2026-10-27 20:51:19,691 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-28
+2026-10-27 20:51:19,895 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-29
+2026-10-27 20:51:20,088 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-30
+2026-10-27 20:51:20,286 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-31
+2026-10-27 20:51:20,489 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-32
+2026-10-27 20:51:20,683 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-33
+2026-10-27 20:51:20,888 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-34
+2026-10-27 20:51:21,082 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-35
+2026-10-27 20:51:21,287 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-36
+2026-10-27 20:51:21,484 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-37
+2026-10-27 20:51:21,686 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-38
+2026-10-27 20:51:21,885 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-39
+2026-10-27 20:51:22,090 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-40
+2026-10-27 20:51:22,289 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-41
+2026-10-27 20:51:22,486 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-42
+2026-10-27 20:51:22,679 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-43
+2026-10-27 20:51:22,878 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-44
+2026-10-27 20:51:23,076 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-45
+2026-10-27 20:51:23,286 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-46
+2026-10-27 20:51:23,474 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-47
+2026-10-27 20:51:23,678 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-48
+2026-10-27 20:51:23,877 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-49
+2026-10-27 20:51:24,080 INFO o.a.j.t.JMeterThread: Thread started: BE student flow (pre-auth) users 1-50
+2026-10-27 20:51:30,010 INFO o.a.j.r.Summariser: summary +   1411 in 00:00:16 =   89.1/s Avg:   358 Min:    58 Max:  2516 Err:    75 (5.32%) Active: 50 Started: 50 Finished: 0
+2026-10-27 20:52:00,009 INFO o.a.j.r.Summariser: summary +   3059 in 00:00:30 =  102.0/s Avg:   495 Min:    57 Max:  2568 Err:   177 (5.79%) Active: 50 Started: 50 Finished: 0
+2026-10-27 20:52:00,009 INFO o.a.j.r.Summariser: summary =   4470 in 00:00:46 =   97.5/s Avg:   452 Min:    57 Max:  2568 Err:   252 (5.64%)
+2026-10-27 20:52:14,205 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-17
+2026-10-27 20:52:14,206 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-17
+2026-10-27 20:52:14,308 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-50
+2026-10-27 20:52:14,309 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-50
+2026-10-27 20:52:14,313 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-46
+2026-10-27 20:52:14,314 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-46
+2026-10-27 20:52:14,361 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-9
+2026-10-27 20:52:14,362 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-9
+2026-10-27 20:52:14,364 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-27
+2026-10-27 20:52:14,364 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-27
+2026-10-27 20:52:14,368 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-37
+2026-10-27 20:52:14,369 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-49
+2026-10-27 20:52:14,369 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-37
+2026-10-27 20:52:14,369 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-49
+2026-10-27 20:52:14,371 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-33
+2026-10-27 20:52:14,371 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-33
+2026-10-27 20:52:14,375 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-48
+2026-10-27 20:52:14,375 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-48
+2026-10-27 20:52:14,376 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-8
+2026-10-27 20:52:14,377 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-8
+2026-10-27 20:52:14,377 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-42
+2026-10-27 20:52:14,377 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-42
+2026-10-27 20:52:14,395 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-12
+2026-10-27 20:52:14,395 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-12
+2026-10-27 20:52:14,405 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-26
+2026-10-27 20:52:14,405 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-26
+2026-10-27 20:52:14,421 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-31
+2026-10-27 20:52:14,422 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-31
+2026-10-27 20:52:14,434 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-41
+2026-10-27 20:52:14,434 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-41
+2026-10-27 20:52:14,441 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-44
+2026-10-27 20:52:14,441 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-44
+2026-10-27 20:52:14,443 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-10
+2026-10-27 20:52:14,443 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-10
+2026-10-27 20:52:14,445 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-1
+2026-10-27 20:52:14,445 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-1
+2026-10-27 20:52:14,452 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-39
+2026-10-27 20:52:14,453 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-39
+2026-10-27 20:52:14,471 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-34
+2026-10-27 20:52:14,472 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-34
+2026-10-27 20:52:14,482 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-32
+2026-10-27 20:52:14,482 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-32
+2026-10-27 20:52:14,548 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-6
+2026-10-27 20:52:14,548 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-6
+2026-10-27 20:52:14,571 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-47
+2026-10-27 20:52:14,571 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-47
+2026-10-27 20:52:14,574 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-43
+2026-10-27 20:52:14,574 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-43
+2026-10-27 20:52:14,580 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-18
+2026-10-27 20:52:14,580 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-18
+2026-10-27 20:52:14,582 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-7
+2026-10-27 20:52:14,582 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-7
+2026-10-27 20:52:14,585 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-13
+2026-10-27 20:52:14,585 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-13
+2026-10-27 20:52:14,602 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-16
+2026-10-27 20:52:14,602 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-16
+2026-10-27 20:52:14,617 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-36
+2026-10-27 20:52:14,617 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-36
+2026-10-27 20:52:14,660 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-3
+2026-10-27 20:52:14,661 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-3
+2026-10-27 20:52:14,661 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-19
+2026-10-27 20:52:14,662 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-19
+2026-10-27 20:52:14,663 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-22
+2026-10-27 20:52:14,663 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-22
+2026-10-27 20:52:14,665 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-38
+2026-10-27 20:52:14,666 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-38
+2026-10-27 20:52:14,667 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-45
+2026-10-27 20:52:14,668 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-45
+2026-10-27 20:52:14,670 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-14
+2026-10-27 20:52:14,670 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-14
+2026-10-27 20:52:14,675 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-25
+2026-10-27 20:52:14,675 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-25
+2026-10-27 20:52:14,678 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-35
+2026-10-27 20:52:14,678 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-35
+2026-10-27 20:52:14,683 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-4
+2026-10-27 20:52:14,683 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-4
+2026-10-27 20:52:14,693 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-20
+2026-10-27 20:52:14,693 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-20
+2026-10-27 20:52:14,697 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-5
+2026-10-27 20:52:14,697 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-5
+2026-10-27 20:52:14,729 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-24
+2026-10-27 20:52:14,729 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-24
+2026-10-27 20:52:14,735 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-40
+2026-10-27 20:52:14,735 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-40
+2026-10-27 20:52:14,742 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-30
+2026-10-27 20:52:14,742 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-30
+2026-10-27 20:52:14,744 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-11
+2026-10-27 20:52:14,744 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-23
+2026-10-27 20:52:14,744 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-23
+2026-10-27 20:52:14,744 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-11
+2026-10-27 20:52:14,750 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-21
+2026-10-27 20:52:14,751 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-21
+2026-10-27 20:52:14,751 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-15
+2026-10-27 20:52:14,751 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-15
+2026-10-27 20:52:14,752 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-2
+2026-10-27 20:52:14,752 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-29
+2026-10-27 20:52:14,752 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-29
+2026-10-27 20:52:14,752 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-2
+2026-10-27 20:52:14,755 INFO o.a.j.t.JMeterThread: Stopping because end time detected by thread: BE student flow (pre-auth) users 1-28
+2026-10-27 20:52:14,756 INFO o.a.j.t.JMeterThread: Thread finished: BE student flow (pre-auth) users 1-28
+2026-10-27 20:52:14,756 INFO o.a.j.e.StandardJMeterEngine: Notifying test listeners of end of test
+2026-10-27 20:52:14,756 INFO o.a.j.s.FileServer: Close: tokens.csv
+2026-10-27 20:52:14,759 INFO o.a.j.r.Summariser: summary +   1549 in 00:00:15 =  105.0/s Avg:   479 Min:    67 Max:  1560 Err:    84 (5.42%) Active: 0 Started: 50 Finished: 50
+2026-10-27 20:52:14,760 INFO o.a.j.r.Summariser: summary =   6019 in 00:01:01 =   99.3/s Avg:   459 Min:    57 Max:  2568 Err:   336 (5.58%)

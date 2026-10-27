@@ -1,0 +1,13 @@
+label                                            n   err%      avg     p50     p90     p95      p99     max      rps
+POST /api/v1/process                             2    0.0    47913 47913.0 48348.2 48402.6  48446.1   48457     0.02
+TOTAL                                            2    0.0    47913 47913.0 48348.2 48402.6  48446.1   48457     0.02
+peak haui-fitness-ai-worker-1         cpu=    2.2%  mem= 15.6% of limit
+peak haui-fitness-backend-1           cpu=    4.1%  mem= 11.2% of limit
+peak haui-fitness-frontend-1          cpu=    0.0%  mem= 28.2% of limit
+peak haui-fitness-kafka-1             cpu=  152.7%  mem= 91.5% of limit
+peak haui-fitness-minio-1             cpu=    0.2%  mem= 41.0% of limit
+peak haui-fitness-mongodb-1           cpu=   77.8%  mem= 43.6% of limit
+peak haui-fitness-redis-1             cpu=    4.8%  mem=  7.5% of limit
+peak pickleball-score                 cpu= 2799.3%  mem=  5.5% of limit
+peak GPU util=62%  mem=3509MiB
+container events: none

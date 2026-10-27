@@ -1,0 +1,24 @@
+label                                            n   err%      avg     p50     p90     p95      p99     max      rps
+GET /api/auth/me                              3925    0.0    833.1   735.0  1808.0  1965.8   2151.8    2352    64.66
+GET /api/enrollments/my-courses               3865    0.0   1051.9   918.0  2266.6  2494.6   2747.4    3086    63.61
+GET /api/notifications                        3504    0.0    958.9   825.0  2025.7  2207.7   2433.0    2713    57.78
+GET /api/sports                               3592    0.0    931.6   716.0  2228.7  2426.0   2679.1    3102    59.21
+GET /api/tasks                                3794    0.0   1132.3   753.0  2711.1  2943.3   3219.1    3572    62.45
+GET /api/video-results                        3728    0.0   1072.4   926.0  2294.6  2503.3   2741.7    3135    61.39
+GET /api/video-results/{id}/status            3662  40.09    795.9   733.0  1717.9  2083.9   2397.8    2704    60.37
+                                             errors: {'400': 1468}
+TOTAL                                        26070   5.63    968.6   813.0  2118.1  2427.5   2884.3    3572   428.75
+                                             errors: {'400': 1468}
+peak haui-fitness-ai-worker-1         cpu=   28.7%  mem= 15.6% of limit
+peak haui-fitness-backend-1           cpu=  405.4%  mem= 22.8% of limit
+peak haui-fitness-frontend-1          cpu=    2.6%  mem= 29.5% of limit
+peak haui-fitness-kafka-1             cpu=  154.8%  mem= 87.7% of limit
+peak haui-fitness-minio-1             cpu=   10.9%  mem= 43.8% of limit
+peak haui-fitness-mongodb-1           cpu=  151.2%  mem= 13.2% of limit
+peak haui-fitness-redis-1             cpu=    4.6%  mem=  5.8% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=    0.3%  mem=  3.2% of limit
+peak pickleball-ai-pickleball-ai-2    cpu=    0.3%  mem=  3.4% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=   27.8%  mem=  3.7% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    0.0%  mem=  0.0% of limit
+peak GPU util=99%  mem=20264MiB
+container events: none

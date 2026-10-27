@@ -1,0 +1,36 @@
+{
+ "POST /api/auth/login": {
+  "samples": 3002,
+  "errors": 0,
+  "error_pct": 0.0,
+  "avg_ms": 1992.7,
+  "min_ms": 50,
+  "p50_ms": 2089.0,
+  "p90_ms": 2386.0,
+  "p95_ms": 2406.0,
+  "p99_ms": 3297.0,
+  "max_ms": 3700,
+  "throughput_rps": 48.84,
+  "kb_per_sec": 42.1,
+  "max_threads": 100,
+  "duration_s": 61.5,
+  "error_codes": {}
+ },
+ "TOTAL": {
+  "samples": 3002,
+  "errors": 0,
+  "error_pct": 0.0,
+  "avg_ms": 1992.7,
+  "min_ms": 50,
+  "p50_ms": 2089.0,
+  "p90_ms": 2386.0,
+  "p95_ms": 2406.0,
+  "p99_ms": 3297.0,
+  "max_ms": 3700,
+  "throughput_rps": 48.84,
+  "kb_per_sec": 42.1,
+  "max_threads": 100,
+  "duration_s": 61.5,
+  "error_codes": {}
+ }
+}

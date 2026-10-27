@@ -1,0 +1,36 @@
+{
+ "GET /": {
+  "samples": 76251,
+  "errors": 0,
+  "error_pct": 0.0,
+  "avg_ms": 378.1,
+  "min_ms": 4,
+  "p50_ms": 406.0,
+  "p90_ms": 424.0,
+  "p95_ms": 431.0,
+  "p99_ms": 459.0,
+  "max_ms": 812,
+  "throughput_rps": 1267.68,
+  "kb_per_sec": 220.4,
+  "max_threads": 500,
+  "duration_s": 60.1,
+  "error_codes": {}
+ },
+ "TOTAL": {
+  "samples": 76251,
+  "errors": 0,
+  "error_pct": 0.0,
+  "avg_ms": 378.1,
+  "min_ms": 4,
+  "p50_ms": 406.0,
+  "p90_ms": 424.0,
+  "p95_ms": 431.0,
+  "p99_ms": 459.0,
+  "max_ms": 812,
+  "throughput_rps": 1267.68,
+  "kb_per_sec": 220.4,
+  "max_threads": 500,
+  "duration_s": 60.1,
+  "error_codes": {}
+ }
+}

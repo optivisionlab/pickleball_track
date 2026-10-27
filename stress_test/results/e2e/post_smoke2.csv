@@ -1,0 +1,2 @@
+ai_score,confirm_ms,e2e_ms,final_status,grading_error,grading_wait_ms,idx,poll_avg_ms,poll_count,put_minio_ms,result_id,start_offset_s,submit_total_ms,upload_url_ms
+10.0,21.4,3111.4,completed,,3034.1,0,10.2,3,41.9,6ae0ca9027fa09ef4568464d,0.0,77.4,14.1

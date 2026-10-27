@@ -1,0 +1,42 @@
+{
+ "POST /api/auth/login": {
+  "samples": 59732,
+  "errors": 59632,
+  "error_pct": 99.83,
+  "avg_ms": 55.7,
+  "min_ms": 0,
+  "p50_ms": 1.0,
+  "p90_ms": 2.0,
+  "p95_ms": 2.0,
+  "p99_ms": 3.0,
+  "max_ms": 45183,
+  "throughput_rps": 797.66,
+  "kb_per_sec": 2019.4,
+  "max_threads": 50,
+  "duration_s": 74.9,
+  "error_codes": {
+   "Non HTTP response code: org.apache.http.": 4943,
+   "Non HTTP response code: java.net.SocketE": 54689
+  }
+ },
+ "TOTAL": {
+  "samples": 59732,
+  "errors": 59632,
+  "error_pct": 99.83,
+  "avg_ms": 55.7,
+  "min_ms": 0,
+  "p50_ms": 1.0,
+  "p90_ms": 2.0,
+  "p95_ms": 2.0,
+  "p99_ms": 3.0,
+  "max_ms": 45183,
+  "throughput_rps": 797.66,
+  "kb_per_sec": 2019.4,
+  "max_threads": 50,
+  "duration_s": 74.9,
+  "error_codes": {
+   "Non HTTP response code: org.apache.http.": 4943,
+   "Non HTTP response code: java.net.SocketE": 54689
+  }
+ }
+}

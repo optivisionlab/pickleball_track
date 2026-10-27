@@ -1,0 +1,6 @@
+# Giữ log kết quả chạy (root .gitignore chặn *.log)
+!*.log
+# Không đẩy video, dashboard HTML tự sinh và log debug JMeter
+videos/
+html/
+jmeter.log

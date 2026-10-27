@@ -1,0 +1,15 @@
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+Creating summariser <summary>
+Created the tree successfully using be_simple.jmx
+Starting standalone test @ 2026 Oct 27 13:09:24 UTC (1793106564632)
+Waiting for possible Shutdown/StopTestNow/HeapDump/ThreadDump message on port 4445
+summary +   7083 in 00:00:05 = 1338.2/s Avg:    76 Min:     3 Max:   196 Err:     0 (0.00%) Active: 200 Started: 200 Finished: 0
+summary +  42540 in 00:00:30 = 1418.0/s Avg:   140 Min:   115 Max:   267 Err:     0 (0.00%) Active: 200 Started: 200 Finished: 0
+summary =  49623 in 00:00:35 = 1405.9/s Avg:   131 Min:     3 Max:   267 Err:     0 (0.00%)
+summary +  35374 in 00:00:25 = 1423.7/s Avg:   140 Min:    63 Max:   228 Err:     0 (0.00%) Active: 0 Started: 200 Finished: 200
+summary =  84997 in 00:01:00 = 1413.3/s Avg:   135 Min:     3 Max:   267 Err:     0 (0.00%)
+Tidying up ...    @ 2026 Oct 27 13:10:24 UTC (1793106624849)
+... end of run

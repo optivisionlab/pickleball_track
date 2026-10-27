@@ -1,0 +1,4 @@
+ai_score,confirm_ms,e2e_ms,final_status,grading_error,grading_wait_ms,idx,poll_avg_ms,poll_count,put_minio_ms,result_id,start_offset_s,submit_total_ms,upload_url_ms
+10.0,17.8,98381.7,completed,,94185.5,0,32.9,91,4158.1,6ae0d4fc7fc6e696fae482e2,0.0,4196.2,20.3
+10.0,21.6,98379.7,completed,,94142.1,1,32.2,91,4201.5,6ae0d4fc202d858ddfcbc9b0,0.001,4237.6,14.5
+10.0,82.5,154502.2,completed,,150520.3,2,22.5,147,3881.7,6ae0d4fcf8bec47b81e56aaf,0.001,3981.9,17.6

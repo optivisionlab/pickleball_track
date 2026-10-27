@@ -1,0 +1,162 @@
+{
+ "GET /api/auth/me": {
+  "samples": 6476,
+  "errors": 5385,
+  "error_pct": 83.15,
+  "avg_ms": 1699.6,
+  "min_ms": 1,
+  "p50_ms": 6.0,
+  "p90_ms": 9201.0,
+  "p95_ms": 13179.5,
+  "p99_ms": 16254.0,
+  "max_ms": 24460,
+  "throughput_rps": 100.11,
+  "kb_per_sec": 176.6,
+  "max_threads": 1000,
+  "duration_s": 64.7,
+  "error_codes": {
+   "Non HTTP response code: org.apache.http.": 5336,
+   "500": 49
+  }
+ },
+ "GET /api/enrollments/my-courses": {
+  "samples": 6467,
+  "errors": 5381,
+  "error_pct": 83.21,
+  "avg_ms": 1670.9,
+  "min_ms": 0,
+  "p50_ms": 6.0,
+  "p90_ms": 7169.8,
+  "p95_ms": 8109.4,
+  "p99_ms": 22136.7,
+  "max_ms": 28940,
+  "throughput_rps": 100.04,
+  "kb_per_sec": 180.5,
+  "max_threads": 1000,
+  "duration_s": 64.6,
+  "error_codes": {
+   "Non HTTP response code: org.apache.http.": 5106,
+   "500": 275
+  }
+ },
+ "GET /api/notifications": {
+  "samples": 6040,
+  "errors": 5314,
+  "error_pct": 87.98,
+  "avg_ms": 1247.2,
+  "min_ms": 0,
+  "p50_ms": 5.0,
+  "p90_ms": 6306.7,
+  "p95_ms": 7655.4,
+  "p99_ms": 15153.9,
+  "max_ms": 24445,
+  "throughput_rps": 96.87,
+  "kb_per_sec": 175.5,
+  "max_threads": 1000,
+  "duration_s": 62.4,
+  "error_codes": {
+   "Non HTTP response code: org.apache.http.": 5026,
+   "500": 288
+  }
+ },
+ "GET /api/sports": {
+  "samples": 6064,
+  "errors": 5120,
+  "error_pct": 84.43,
+  "avg_ms": 303.1,
+  "min_ms": 0,
+  "p50_ms": 5.0,
+  "p90_ms": 414.0,
+  "p95_ms": 1080.7,
+  "p99_ms": 6684.1,
+  "max_ms": 20444,
+  "throughput_rps": 104.03,
+  "kb_per_sec": 198.9,
+  "max_threads": 1000,
+  "duration_s": 58.3,
+  "error_codes": {
+   "Non HTTP response code: org.apache.http.": 5120
+  }
+ },
+ "GET /api/tasks": {
+  "samples": 6282,
+  "errors": 5321,
+  "error_pct": 84.7,
+  "avg_ms": 1153.3,
+  "min_ms": 0,
+  "p50_ms": 5.0,
+  "p90_ms": 3118.9,
+  "p95_ms": 12258.9,
+  "p99_ms": 12403.0,
+  "max_ms": 20941,
+  "throughput_rps": 104.98,
+  "kb_per_sec": 238.5,
+  "max_threads": 1000,
+  "duration_s": 59.8,
+  "error_codes": {
+   "Non HTTP response code: org.apache.http.": 5321
+  }
+ },
+ "GET /api/video-results": {
+  "samples": 6282,
+  "errors": 5849,
+  "error_pct": 93.11,
+  "avg_ms": 1977.5,
+  "min_ms": 1,
+  "p50_ms": 5.0,
+  "p90_ms": 9065.5,
+  "p95_ms": 14987.4,
+  "p99_ms": 16382.7,
+  "max_ms": 28228,
+  "throughput_rps": 98.01,
+  "kb_per_sec": 173.3,
+  "max_threads": 1000,
+  "duration_s": 64.1,
+  "error_codes": {
+   "Non HTTP response code: org.apache.http.": 5047,
+   "500": 802
+  }
+ },
+ "GET /api/video-results/{id}/status": {
+  "samples": 6071,
+  "errors": 5927,
+  "error_pct": 97.63,
+  "avg_ms": 319.0,
+  "min_ms": 0,
+  "p50_ms": 4.0,
+  "p90_ms": 14.0,
+  "p95_ms": 1223.0,
+  "p99_ms": 14923.7,
+  "max_ms": 24481,
+  "throughput_rps": 102.04,
+  "kb_per_sec": 195.6,
+  "max_threads": 1000,
+  "duration_s": 59.5,
+  "error_codes": {
+   "400": 144,
+   "Non HTTP response code: org.apache.http.": 5713,
+   "500": 70
+  }
+ },
+ "TOTAL": {
+  "samples": 43682,
+  "errors": 38297,
+  "error_pct": 87.67,
+  "avg_ms": 1208.5,
+  "min_ms": 0,
+  "p50_ms": 5.0,
+  "p90_ms": 5279.9,
+  "p95_ms": 9430.4,
+  "p99_ms": 16110.0,
+  "max_ms": 28940,
+  "throughput_rps": 674.83,
+  "kb_per_sec": 1276.8,
+  "max_threads": 1000,
+  "duration_s": 64.7,
+  "error_codes": {
+   "Non HTTP response code: org.apache.http.": 36669,
+   "500": 1484,
+   "400": 144
+  }
+ }
+}

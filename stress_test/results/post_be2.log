@@ -1,0 +1,64 @@
+######## post_flow_u10 | GPU 90 %, 20264 MiB
+                                             errors: {'400': 700}
+TOTAL                                        12308   5.69     40.4    37.0    68.0    79.0    100.0     799   206.82
+                                             errors: {'400': 700}
+peak haui-fitness-backend-1           cpu=  362.3%  mem= 17.9% of limit
+peak haui-fitness-mongodb-1           cpu=  226.5%  mem= 10.7% of limit
+container events: none
+######## post_flow_u50 | GPU 45 %, 20264 MiB
+                                             errors: {'400': 919}
+TOTAL                                        16165   5.69    154.1   135.0   268.0   307.0    405.4    1033   271.44
+                                             errors: {'400': 919}
+peak haui-fitness-backend-1           cpu=  403.2%  mem= 19.2% of limit
+peak haui-fitness-mongodb-1           cpu=  207.5%  mem= 10.0% of limit
+container events: none
+######## post_flow_u100 | GPU 92 %, 20264 MiB
+                                             errors: {'400': 1472}
+TOTAL                                        25933   5.68    193.2   174.0   359.0   478.0    738.0    1232   432.04
+                                             errors: {'400': 1472}
+peak haui-fitness-backend-1           cpu=  407.1%  mem= 19.9% of limit
+peak haui-fitness-mongodb-1           cpu=  154.8%  mem=  8.1% of limit
+container events: none
+######## post_flow_u200 | GPU 92 %, 20264 MiB
+                                             errors: {'400': 1472}
+TOTAL                                        26009   5.66    386.1   364.0   712.0   888.0   1225.0    1750   431.82
+                                             errors: {'400': 1472}
+peak haui-fitness-backend-1           cpu=  406.4%  mem= 20.8% of limit
+peak haui-fitness-mongodb-1           cpu=  123.3%  mem= 15.3% of limit
+container events: none
+######## post_flow_u500 | GPU 92 %, 20264 MiB
+                                             errors: {'400': 1468}
+TOTAL                                        26070   5.63    968.6   813.0  2118.1  2427.5   2884.3    3572   428.75
+                                             errors: {'400': 1468}
+peak haui-fitness-backend-1           cpu=  405.4%  mem= 22.8% of limit
+peak haui-fitness-mongodb-1           cpu=  151.2%  mem= 13.2% of limit
+container events: none
+######## post_flow_u1000 | GPU 89 %, 20264 MiB
+                                             errors: {'400': 1423}
+TOTAL                                        26462   5.38   1936.0  1167.0  5930.9  6600.0   7143.0    7849    425.2
+                                             errors: {'400': 1423}
+peak haui-fitness-backend-1           cpu=  405.0%  mem= 25.6% of limit
+peak haui-fitness-mongodb-1           cpu=  156.5%  mem= 16.9% of limit
+container events: none
+######## post_spike_1000 | GPU 93 %, 20264 MiB
+                                             errors: {'400': 1416}
+TOTAL                                        25949   5.46   2250.7  2337.0  2828.0  3017.0   6320.2    9549   424.56
+                                             errors: {'400': 1416}
+peak haui-fitness-backend-1           cpu=  405.1%  mem= 26.7% of limit
+peak haui-fitness-mongodb-1           cpu=   84.8%  mem=  9.6% of limit
+container events: none
+######## post_stress_u2000 | GPU 87 %, 20264 MiB
+                                             errors: {'400': 1327}
+TOTAL                                        26281   5.05   3694.3  1645.0 12425.0 14753.0  15952.0   16597   397.71
+                                             errors: {'400': 1327}
+peak haui-fitness-backend-1           cpu=  404.6%  mem= 30.6% of limit
+peak haui-fitness-mongodb-1           cpu=  153.9%  mem=  9.7% of limit
+container events: none
+######## post_stress_u5000 | GPU 89 %, 20264 MiB
+                                             errors: {'400': 1284}
+TOTAL                                        28875   4.45   8447.2  6092.0 19850.6 36008.0  40202.3   42317   444.24
+                                             errors: {'400': 1284}
+peak haui-fitness-backend-1           cpu=  406.1%  mem= 35.6% of limit
+peak haui-fitness-mongodb-1           cpu=  160.9%  mem=  9.8% of limit
+container events: none
+healthy after 0s

@@ -1,0 +1,123 @@
+######## post_login_u1 | GPU 92 %, 20264 MiB
+POST /api/auth/login                          1042    0.0     57.0    57.0    67.0    68.0     72.0     112    17.39
+TOTAL                                         1042    0.0     57.0    57.0    67.0    68.0     72.0     112    17.39
+peak haui-fitness-backend-1           cpu=  126.6%  mem= 32.7% of limit
+peak haui-fitness-mongodb-1           cpu=   25.1%  mem= 11.6% of limit
+container events: none
+######## post_login_u5 | GPU 92 %, 20264 MiB
+POST /api/auth/login                          4957    0.0     59.3    59.0    76.0    81.0     91.0     224    82.72
+TOTAL                                         4957    0.0     59.3    59.0    76.0    81.0     91.0     224    82.72
+peak haui-fitness-backend-1           cpu=  405.3%  mem= 32.6% of limit
+peak haui-fitness-mongodb-1           cpu=   83.9%  mem= 11.6% of limit
+container events: none
+######## post_login_u10 | GPU 99 %, 20264 MiB
+POST /api/auth/login                          4589    0.0    128.3   113.0   177.0   182.0    197.0     286     76.5
+TOTAL                                         4589    0.0    128.3   113.0   177.0   182.0    197.0     286     76.5
+peak haui-fitness-backend-1           cpu=  421.8%  mem= 32.7% of limit
+peak haui-fitness-mongodb-1           cpu=   75.4%  mem= 18.8% of limit
+container events: none
+######## post_login_u20 | GPU 91 %, 20264 MiB
+POST /api/auth/login                          3238    0.0    364.2   387.0   489.0   498.0    589.0    1602    53.89
+TOTAL                                         3238    0.0    364.2   387.0   489.0   498.0    589.0    1602    53.89
+peak haui-fitness-backend-1           cpu=  421.7%  mem= 33.1% of limit
+peak haui-fitness-mongodb-1           cpu=   18.8%  mem= 11.7% of limit
+container events: none
+######## post_login_u50 | GPU 91 %, 20264 MiB
+POST /api/auth/login                          2960    0.0   1002.1  1002.0  1289.1  1309.0   1496.4    2101    48.86
+TOTAL                                         2960    0.0   1002.1  1002.0  1289.1  1309.0   1496.4    2101    48.86
+peak haui-fitness-backend-1           cpu=  425.9%  mem= 32.8% of limit
+peak haui-fitness-mongodb-1           cpu=   81.5%  mem= 11.7% of limit
+container events: none
+######## post_login_u100 | GPU 89 %, 20264 MiB
+POST /api/auth/login                          3002    0.0   1992.7  2089.0  2386.0  2406.0   3297.0    3700    48.84
+TOTAL                                         3002    0.0   1992.7  2089.0  2386.0  2406.0   3297.0    3700    48.84
+peak haui-fitness-backend-1           cpu=  424.7%  mem= 33.5% of limit
+peak haui-fitness-mongodb-1           cpu=   71.9%  mem= 19.7% of limit
+container events: none
+######## post_flow_u10 | GPU 92 %, 20264 MiB
+                                             errors: {'400': 1404}
+TOTAL                                        24607   5.71     20.5    18.0    38.0    44.0     56.0     139    410.9
+                                             errors: {'400': 1404}
+peak haui-fitness-backend-1           cpu=  403.1%  mem= 33.1% of limit
+peak haui-fitness-mongodb-1           cpu=   80.7%  mem= 11.8% of limit
+container events: none
+######## post_flow_u50 | GPU 93 %, 20264 MiB
+                                             errors: {'400': 1512}
+TOTAL                                        26551   5.69     94.3    97.0   145.0   159.0    188.0     314   443.04
+                                             errors: {'400': 1512}
+peak haui-fitness-backend-1           cpu=  405.0%  mem= 33.8% of limit
+peak haui-fitness-mongodb-1           cpu=   93.1%  mem= 12.0% of limit
+container events: none
+######## post_flow_u100 | GPU 91 %, 20264 MiB
+                                             errors: {'400': 1480}
+TOTAL                                        26061   5.68    192.2   196.0   295.0   328.0    527.4    1178   434.23
+                                             errors: {'400': 1480}
+peak haui-fitness-backend-1           cpu=  405.2%  mem= 34.5% of limit
+peak haui-fitness-mongodb-1           cpu=  159.5%  mem= 12.2% of limit
+container events: none
+######## post_flow_u200 | GPU 86 %, 20264 MiB
+                                             errors: {'400': 1471}
+TOTAL                                        26079   5.64    385.2   357.0   668.0   747.0   1056.0    1713   433.05
+                                             errors: {'400': 1471}
+peak haui-fitness-backend-1           cpu=  405.9%  mem= 35.8% of limit
+peak haui-fitness-mongodb-1           cpu=  157.2%  mem= 12.6% of limit
+container events: none
+######## post_flow_u500 | GPU 93 %, 20264 MiB
+                                             errors: {'500': 1}
+                                             errors: {'Non HTTP response code: org.apache.http.': 1}
+                                             errors: {'400': 1409}
+TOTAL                                        25424   5.55    997.3   386.0  3070.7  3368.0   3901.8    5539   415.08
+                                             errors: {'500': 1, 'Non HTTP response code: org.apache.http.': 1, '400': 1409}
+peak haui-fitness-backend-1           cpu=  406.5%  mem= 37.9% of limit
+peak haui-fitness-mongodb-1           cpu=   82.6%  mem= 12.7% of limit
+container events: none
+######## post_flow_u1000 | GPU 93 %, 20264 MiB
+                                             errors: {'500': 4}
+                                             errors: {'Non HTTP response code: org.apache.http.': 4}
+                                             errors: {'Non HTTP response code: org.apache.http.': 1}
+                                             errors: {'500': 2}
+                                             errors: {'400': 1398, 'Non HTTP response code: org.apache.http.': 2, '500': 1}
+TOTAL                                        25824   5.47   1974.2  1404.0  4205.4  4582.0   5051.5    5875   419.76
+                                             errors: {'500': 7, 'Non HTTP response code: org.apache.http.': 7, '400': 1398}
+peak haui-fitness-backend-1           cpu=  410.4%  mem= 41.8% of limit
+peak haui-fitness-mongodb-1           cpu=   84.1%  mem= 12.7% of limit
+container events: none
+######## post_spike_1000 | GPU 99 %, 20264 MiB
+                                             errors: {'Non HTTP response code: org.apache.http.': 3, '500': 4}
+                                             errors: {'Non HTTP response code: org.apache.http.': 4, '500': 5}
+                                             errors: {'500': 3}
+                                             errors: {'Non HTTP response code: org.apache.http.': 4}
+                                             errors: {'Non HTTP response code: org.apache.http.': 5, '500': 14}
+                                             errors: {'500': 3, 'Non HTTP response code: org.apache.http.': 14}
+                                             errors: {'400': 1434, '500': 4, 'Non HTTP response code: org.apache.http.': 2}
+TOTAL                                        26179   5.73   2233.3  2104.0  3967.2  5229.0   8222.0   15355   425.27
+                                             errors: {'Non HTTP response code: org.apache.http.': 32, '500': 33, '400': 1434}
+peak haui-fitness-backend-1           cpu=  405.8%  mem= 41.6% of limit
+peak haui-fitness-mongodb-1           cpu=   85.0%  mem= 12.8% of limit
+container events: none
+######## post_stress_u2000 | GPU 99 %, 20264 MiB
+                                             errors: {'500': 1, 'Non HTTP response code: org.apache.http.': 2}
+                                             errors: {'500': 1, 'Non HTTP response code: org.apache.http.': 1}
+                                             errors: {'500': 2}
+                                             errors: {'Non HTTP response code: org.apache.http.': 2}
+                                             errors: {'500': 2, 'Non HTTP response code: org.apache.http.': 1}
+                                             errors: {'500': 4, 'Non HTTP response code: org.apache.http.': 2}
+                                             errors: {'400': 1438, 'Non HTTP response code: org.apache.http.': 3, '500': 2}
+TOTAL                                        26434   5.53   3543.2  3224.0  7883.1  8840.0  12805.0   29508   420.34
+                                             errors: {'500': 12, 'Non HTTP response code: org.apache.http.': 11, '400': 1438}
+peak haui-fitness-backend-1           cpu=  405.8%  mem= 43.8% of limit
+peak haui-fitness-mongodb-1           cpu=   84.5%  mem= 12.9% of limit
+container events: none
+######## post_stress_u5000 | GPU 89 %, 20264 MiB
+                                             errors: {'500': 2, 'Non HTTP response code: org.apache.http.': 1}
+                                             errors: {'Non HTTP response code: org.apache.http.': 1, '500': 4}
+                                             errors: {'500': 1}
+                                             errors: {'Non HTTP response code: org.apache.http.': 2}
+                                             errors: {'500': 2}
+                                             errors: {'400': 1210, 'Non HTTP response code: org.apache.http.': 2}
+TOTAL                                        28574   4.29   8769.7  7257.5 19680.4 26200.3  32263.6   54088   424.77
+                                             errors: {'500': 9, 'Non HTTP response code: org.apache.http.': 6, '400': 1210}
+peak haui-fitness-backend-1           cpu=  406.8%  mem= 51.7% of limit
+peak haui-fitness-mongodb-1           cpu=   97.2%  mem= 13.0% of limit
+container events: none
+healthy after 0s

@@ -1,0 +1,15 @@
+label                                            n   err%      avg     p50     p90     p95      p99     max      rps
+FE GET / (index.html)                        20963    0.0    109.5    96.0   287.0   301.0    487.0     795   348.15
+FE GET asset                                227639    0.0    109.9    97.0   287.0   300.0    413.0     996  3785.72
+FE PAGE LOAD (html+css+js)                   20498    0.0   1315.2  1304.5  1899.0  2089.2   2472.0    3275   339.96
+TOTAL                                       248602    0.0    109.9    96.0   287.0   300.0    414.0     996  4128.64
+peak haui-fitness-ai-worker-1         cpu=   18.0%  mem= 15.4% of limit
+peak haui-fitness-backend-1           cpu=    5.8%  mem= 12.1% of limit
+peak haui-fitness-frontend-1          cpu=   54.4%  mem= 36.6% of limit
+peak haui-fitness-kafka-1             cpu=  149.4%  mem= 91.6% of limit
+peak haui-fitness-minio-1             cpu=    2.4%  mem= 39.8% of limit
+peak haui-fitness-mongodb-1           cpu=   61.9%  mem= 46.4% of limit
+peak haui-fitness-redis-1             cpu=    3.7%  mem=  5.2% of limit
+peak pickleball-score                 cpu=   17.6%  mem=  6.0% of limit
+peak GPU util=99%  mem=14857MiB
+container events: none

@@ -1,0 +1,36 @@
+{
+ "GET /": {
+  "samples": 102201,
+  "errors": 0,
+  "error_pct": 0.0,
+  "avg_ms": 5.6,
+  "min_ms": 0,
+  "p50_ms": 5.0,
+  "p90_ms": 6.0,
+  "p95_ms": 7.0,
+  "p99_ms": 11.0,
+  "max_ms": 91,
+  "throughput_rps": 1705.45,
+  "kb_per_sec": 296.5,
+  "max_threads": 10,
+  "duration_s": 59.9,
+  "error_codes": {}
+ },
+ "TOTAL": {
+  "samples": 102201,
+  "errors": 0,
+  "error_pct": 0.0,
+  "avg_ms": 5.6,
+  "min_ms": 0,
+  "p50_ms": 5.0,
+  "p90_ms": 6.0,
+  "p95_ms": 7.0,
+  "p99_ms": 11.0,
+  "max_ms": 91,
+  "throughput_rps": 1705.45,
+  "kb_per_sec": 296.5,
+  "max_threads": 10,
+  "duration_s": 59.9,
+  "error_codes": {}
+ }
+}

@@ -1,0 +1,40 @@
+{
+ "POST /api/auth/login": {
+  "samples": 71,
+  "errors": 3,
+  "error_pct": 4.23,
+  "avg_ms": 20708.3,
+  "min_ms": 746,
+  "p50_ms": 22173.0,
+  "p90_ms": 39858.0,
+  "p95_ms": 39945.0,
+  "p99_ms": 60057.1,
+  "max_ms": 60062,
+  "throughput_rps": 0.93,
+  "kb_per_sec": 0.9,
+  "max_threads": 20,
+  "duration_s": 76.7,
+  "error_codes": {
+   "Non HTTP response code: java.net.SocketT": 3
+  }
+ },
+ "TOTAL": {
+  "samples": 71,
+  "errors": 3,
+  "error_pct": 4.23,
+  "avg_ms": 20708.3,
+  "min_ms": 746,
+  "p50_ms": 22173.0,
+  "p90_ms": 39858.0,
+  "p95_ms": 39945.0,
+  "p99_ms": 60057.1,
+  "max_ms": 60062,
+  "throughput_rps": 0.93,
+  "kb_per_sec": 0.9,
+  "max_threads": 20,
+  "duration_s": 76.7,
+  "error_codes": {
+   "Non HTTP response code: java.net.SocketT": 3
+  }
+ }
+}

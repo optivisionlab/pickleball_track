@@ -1,0 +1,21 @@
+label                                            n   err%      avg     p50     p90     p95      p99     max      rps
+GET /api/auth/me                              1171    0.0   3763.8  4133.0  5722.0  6093.5   6348.2    6541    18.65
+GET /api/enrollments/my-courses               1131    0.0   4089.3  4663.0  5921.0  6385.5   6651.2    6780    18.03
+GET /api/notifications                         712    0.0   4073.8  4145.0  5670.4  6087.8   6585.9    6692    11.47
+GET /api/sports                                748    0.0   4088.0  4516.0  5568.9  5805.6   6425.9    6705    12.03
+GET /api/tasks                                1003    0.0   5258.3  6306.0  7427.8  7861.0   8894.9    9304     16.0
+GET /api/video-results                         835    0.0   4241.2  4603.0  5866.0  6331.4   6662.3    6740    13.37
+GET /api/video-results/{id}/status             768  49.87   3046.9  2645.5  4786.6  5740.9   6357.6    6741    12.34
+                                             errors: {'400': 383}
+TOTAL                                         6368   6.01   4105.9  4423.0  6351.3  6677.2   7695.6    9304   101.43
+                                             errors: {'400': 383}
+peak haui-fitness-ai-worker-1         cpu=    1.1%  mem= 15.6% of limit
+peak haui-fitness-backend-1           cpu=  131.8%  mem= 19.9% of limit
+peak haui-fitness-frontend-1          cpu=    3.5%  mem= 28.5% of limit
+peak haui-fitness-kafka-1             cpu=  149.2%  mem= 91.8% of limit
+peak haui-fitness-minio-1             cpu=    3.0%  mem= 39.5% of limit
+peak haui-fitness-mongodb-1           cpu=   99.2%  mem= 27.8% of limit
+peak haui-fitness-redis-1             cpu=    4.4%  mem=  4.8% of limit
+peak pickleball-score                 cpu=    0.3%  mem=  6.0% of limit
+peak GPU util=99%  mem=14857MiB
+container events: none
