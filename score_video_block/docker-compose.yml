@@ -1,6 +1,6 @@
 # GPU deployment of the scoring API: docker compose up -d --build
 #
-# AI_REPLICAS instances of the model server share the GPU (each loads the models
+# AI_REPLICAS (default 3) instances of the model server share the GPU (each loads the models
 # once, ~3 GB VRAM) behind an nginx load balancer on port 8888:
 # - least_conn: every job in progress holds one connection, so the instance with
 #   the fewest connections is the least loaded one;
@@ -36,7 +36,7 @@ services:
     # inference slot for 1080p video).
     shm_size: 2gb
     deploy:
-      replicas: ${AI_REPLICAS:-2}
+      replicas: ${AI_REPLICAS:-3}
       resources:
         reservations:
           devices:

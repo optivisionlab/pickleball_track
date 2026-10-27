@@ -201,7 +201,7 @@ docker compose logs -f            # wait for "Models loaded"
 curl localhost:8888/ready
 ```
 
-`docker-compose.yml` runs `AI_REPLICAS` (default 2) model servers on the GPU behind an
+`docker-compose.yml` runs `AI_REPLICAS` (default 3) model servers on the GPU behind an
 nginx load balancer (`deploy/nginx-lb.conf`) on port 8888. nginx sends each job to the
 replica with the fewest open connections (a job holds its connection until scored)
 and skips a replica that answers `429`. Scale with
