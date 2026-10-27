@@ -1,29 +1,62 @@
 # GPU deployment of the scoring API: docker compose up -d --build
+#
+# AI_REPLICAS instances of the model server share the GPU (each loads the models
+# once, ~3 GB VRAM) behind an nginx load balancer on port 8888:
+# - least_conn: every job in progress holds one connection, so the instance with
+#   the fewest connections is the least loaded one;
+# - an instance answering 429 (its queue is full) or failing to connect is skipped
+#   and the request goes to the next one.
+# Scale without downtime of the others: docker compose up -d --scale pickleball-ai=N
+name: pickleball-ai
+
 services:
-  pickleball-score:
+  pickleball-ai:
     build:
       context: .
       # CPU-only image: TORCH_INDEX: https://download.pytorch.org/whl/cpu (and drop `deploy`).
       args:
         TORCH_INDEX: https://download.pytorch.org/whl/cu128
-    image: pickleball-track:gpu
-    container_name: pickleball-score
+    image: pickleball-track:gpu-opt
     env_file: .env
-    ports:
-      - "8888:8888"
+    environment:
+      # MinIO of the fitness system on this server (100.95.228.82); overrides .env if unset there.
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-100.95.228.82:9000}
+      PICKLEBALL_INFERENCE_SLOTS: ${PICKLEBALL_INFERENCE_SLOTS:-2}
+      PICKLEBALL_RESERVED_SHORT_SLOTS: ${PICKLEBALL_RESERVED_SHORT_SLOTS:-1}
+      PICKLEBALL_SHORT_VIDEO_SECONDS: ${PICKLEBALL_SHORT_VIDEO_SECONDS:-20}
+      PICKLEBALL_MAX_PENDING_JOBS: ${PICKLEBALL_MAX_PENDING_JOBS:-12}
+      PICKLEBALL_MAX_CONCURRENT_DOWNLOADS: ${PICKLEBALL_MAX_CONCURRENT_DOWNLOADS:-4}
+      PICKLEBALL_DECODER: ${PICKLEBALL_DECODER:-opencv}
     volumes:
       # best.pt, BEATs and videomae-base. Read-only once videomae-base/model.safetensors
       # exists; drop ":ro" (and make the directory writable by uid 10001) to let
       # the service download it on first start.
-      - ./src/weights:/app/src/weights:ro
-    # Frame preprocessing workers exchange frames through /dev/shm (Docker's
-    # default is 64 MB; ~10 MB per worker is needed for 1080p video).
-    shm_size: 1gb
+      - ${PICKLEBALL_WEIGHTS_DIR:-./src/weights}:/app/src/weights:ro
+    # Frame preprocessing workers exchange frames through /dev/shm (~210 MB per
+    # inference slot for 1080p video).
+    shm_size: 2gb
     deploy:
+      replicas: ${AI_REPLICAS:-2}
       resources:
         reservations:
           devices:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+    restart: unless-stopped
+
+  pickleball-lb:
+    image: nginx:1.27.5-alpine
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./deploy/nginx-lb.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      pickleball-ai:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8888/lb-health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     restart: unless-stopped

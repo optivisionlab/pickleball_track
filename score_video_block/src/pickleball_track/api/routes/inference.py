@@ -28,7 +28,7 @@ async def process_video(
     )
     return VideoJobResponse(
         jobId=request.job_id,
-        resultId=request.result_id,
+        resultId=request.result_id or request.job_id,
         status="completed",
         score=job_score.score,
         feedback=job_score.feedback,

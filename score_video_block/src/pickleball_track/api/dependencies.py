@@ -21,6 +21,7 @@ def get_video_job_service(request: Request) -> VideoJobService:
         settings=request.app.state.settings,
         predictor=request.app.state.inference_service,
         minio_client_factory=request.app.state.minio_client_factory,
+        download_slots=getattr(request.app.state, "download_slots", None),
     )
 
 

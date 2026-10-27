@@ -14,11 +14,15 @@ Both produce pixel values identical to ``VideoMAEImageProcessor``.
 
 from __future__ import annotations
 
+import json
 import logging
 import multiprocessing
 import os
 import queue
+import re
+import subprocess
 import threading
+from collections import deque
 from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -241,9 +245,145 @@ def _read_frames(
         raise RuntimeError(f"Cannot decode video {video_path}: {exc}") from exc
 
 
-def iter_frames(video_path: str | Path, prefetch: int = 64) -> Iterator[tuple[np.ndarray, float]]:
-    """Yield ``(BGR frame, timestamp seconds)`` decoded sequentially in a background thread."""
+_PTS_TIME = re.compile(rb"\bpts_time:\s*(-?[0-9.]+|nan|NOPTS)")
+
+
+class FFmpegCapture:
+    """The part of ``cv2.VideoCapture`` this module uses, decoding with the ffmpeg CLI.
+
+    ffmpeg decodes with its own threads and pipes BGR frames, which on 10-bit HEVC
+    (iPhone HDR) costs about a third of OpenCV's CPU time. Colours of HDR video
+    differ from OpenCV's conversion, so the decoder is opt-in (``decoder="ffmpeg"``).
+    Timestamps come from the ``showinfo`` filter and match ``CAP_PROP_POS_MSEC``.
+    """
+
+    def __init__(self, video_path: str | Path, threads: int = 0, autorotate: bool = False):
+        self.path = str(video_path)
+        probe = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+             "-show_entries", "stream=width,height,start_time:stream_side_data=rotation:format=start_time",
+             "-of", "json", self.path],
+            capture_output=True, check=False,
+        )
+        info = json.loads(probe.stdout or b"{}")
+        streams = info.get("streams") or []
+        if probe.returncode != 0 or not streams:
+            self._process = None
+            return
+        stream = streams[0]
+        self.width, self.height = int(stream["width"]), int(stream["height"])
+        rotation = 0
+        for side in stream.get("side_data_list") or []:
+            rotation = int(side.get("rotation", rotation) or 0)
+        if autorotate and rotation % 180:
+            self.width, self.height = self.height, self.width
+        # OpenCV reports pts - stream start; ffmpeg shifts timestamps by the format start.
+        self._offset = float(info.get("format", {}).get("start_time") or 0) - float(stream.get("start_time") or 0)
+        self.frame_bytes = self.width * self.height * 3
+        command = ["ffmpeg", "-hide_banner", "-nostats", "-nostdin", "-loglevel", "info"]
+        if not autorotate:
+            command.append("-noautorotate")
+        command += [
+            "-threads", str(threads), "-i", self.path, "-map", "0:v:0", "-an", "-sn", "-dn",
+            "-fps_mode", "passthrough", "-vf", "showinfo=checksum=0", "-pix_fmt", "bgr24", "-f", "rawvideo", "pipe:1",
+        ]
+        self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1 << 20)
+        self._timestamps: queue.Queue[float] = queue.Queue()
+        self._log: deque[bytes] = deque(maxlen=20)
+        self._reader = threading.Thread(target=self._read_log, name="ffmpeg-log", daemon=True)
+        self._reader.start()
+        self._position = 0.0
+
+    def _read_log(self) -> None:
+        for line in self._process.stderr:
+            match = _PTS_TIME.search(line) if b"Parsed_showinfo" in line else None
+            if match is None:
+                self._log.append(line.rstrip())
+                continue
+            try:
+                value = float(match.group(1))
+            except ValueError:
+                value = float("nan")
+            self._timestamps.put(value)
+
+    def isOpened(self) -> bool:  # noqa: N802 (cv2 naming)
+        return self._process is not None
+
+    def read(self, image: np.ndarray | None = None) -> tuple[bool, np.ndarray | None]:
+        if self._process is None:
+            return False, None
+        out = image if image is not None and image.nbytes == self.frame_bytes else np.empty(
+            (self.height, self.width, 3), dtype=np.uint8
+        )
+        view = memoryview(out.reshape(-1))
+        filled = 0
+        while filled < self.frame_bytes:
+            count = self._process.stdout.readinto(view[filled:])
+            if not count:
+                break
+            filled += count
+        if filled < self.frame_bytes:
+            # End of stream: clean exit, or an error / truncated frame.
+            returncode = self._process.wait()
+            if filled or returncode:
+                tail = b" | ".join(self._log).decode(errors="replace")[-500:]
+                raise RuntimeError(f"ffmpeg failed decoding {self.path} (exit {returncode}): {tail}")
+            return False, None
+        try:
+            stamp = self._timestamps.get(timeout=30)
+        except queue.Empty:
+            stamp = float("nan")
+        self._position = stamp + self._offset if stamp == stamp else self._position
+        return True, out
+
+    def get(self, prop: int) -> float:
+        if prop == cv2.CAP_PROP_POS_MSEC:
+            return self._position * 1000.0
+        if prop == cv2.CAP_PROP_FRAME_WIDTH:
+            return float(self.width)
+        if prop == cv2.CAP_PROP_FRAME_HEIGHT:
+            return float(self.height)
+        return 0.0
+
+    def set(self, prop: int, value: float) -> bool:
+        return False
+
+    def release(self) -> None:
+        process, self._process = self._process, None
+        if process is None:
+            return
+        if process.poll() is None:
+            process.kill()
+        process.wait()
+        for stream in (process.stdout, process.stderr):
+            if stream:
+                stream.close()
+        self._reader.join(timeout=5)
+
+
+def open_capture(video_path: str | Path, decoder: str = "opencv", ffmpeg_threads: int = 0, autorotate: bool = True):
+    """A capture for ``decoder``: ``cv2.VideoCapture`` or ``FFmpegCapture``."""
+    if decoder == "ffmpeg":
+        return FFmpegCapture(video_path, threads=ffmpeg_threads, autorotate=autorotate)
+    if decoder != "opencv":
+        raise ValueError(f"Unknown decoder: {decoder}")
+    return cv2.VideoCapture(str(video_path))
+
+
+def _probe_rotation(video_path: str | Path) -> int:
+    """The rotation OpenCV would apply, read without decoding (for the ffmpeg decoder)."""
     capture = cv2.VideoCapture(str(video_path))
+    try:
+        return _defer_rotation(capture) if capture.isOpened() else 0
+    finally:
+        capture.release()
+
+
+def iter_frames(
+    video_path: str | Path, prefetch: int = 64, *, decoder: str = "opencv", ffmpeg_threads: int = 0
+) -> Iterator[tuple[np.ndarray, float]]:
+    """Yield ``(BGR frame, timestamp seconds)`` decoded sequentially in a background thread."""
+    capture = open_capture(video_path, decoder, ffmpeg_threads, autorotate=True)
     if not capture.isOpened():
         raise RuntimeError(f"Cannot open video: {video_path}")
     try:
@@ -417,13 +557,17 @@ class ProcessFramePool:
         timeline: FrameTimeline,
         chunk: int = 4,
         prefetch_frames: int = 512,
+        *,
+        decoder: str = "opencv",
+        ffmpeg_threads: int = 0,
     ) -> Iterator[torch.Tensor]:
         """Yield preprocessed frames (N, C, H, W) of ``video_path`` in order, ``chunk`` at a time."""
-        capture = cv2.VideoCapture(str(video_path))
+        # Workers rotate frames in parallel; the ffmpeg decoder emits them unrotated too.
+        capture = open_capture(video_path, decoder, ffmpeg_threads, autorotate=False)
         if not capture.isOpened():
             raise RuntimeError(f"Cannot open video: {video_path}")
         try:
-            rotate = _defer_rotation(capture)
+            rotate = _defer_rotation(capture) if decoder == "opencv" else _probe_rotation(video_path)
             ok, first = capture.read()
             if not ok:
                 return

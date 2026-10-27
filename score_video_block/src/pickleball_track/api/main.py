@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from typing import Any
@@ -23,7 +24,16 @@ logger = logging.getLogger(__name__)
 
 
 def _default_inference_factory(settings: Settings) -> VideoInferenceService:
-    return VideoInferenceService(load_models(settings), settings.inference, slots=settings.inference_slots)
+    return VideoInferenceService(
+        load_models(settings),
+        settings.inference,
+        slots=settings.inference_slots,
+        reserved_short_slots=settings.reserved_short_slots,
+        short_video_seconds=settings.short_video_seconds,
+        slot_aging_seconds=settings.slot_aging_seconds,
+        decoder=settings.decoder,
+        ffmpeg_threads=settings.ffmpeg_threads,
+    )
 
 
 def create_app(
@@ -47,6 +57,7 @@ def create_app(
         app.state.job_gate = JobGate(
             settings.max_pending_jobs, settings.busy_retry_after_seconds, settings.result_cache_seconds
         )
+        app.state.download_slots = threading.BoundedSemaphore(settings.max_concurrent_downloads)
         try:
             yield
         finally:

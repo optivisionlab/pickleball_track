@@ -42,6 +42,8 @@ SUPPORTED_VIDEO_SUFFIXES = frozenset({".mp4", ".mov"})
 
 SUPPORTED_DEVICES = frozenset({"auto", "cpu", "cuda"})
 
+SUPPORTED_DECODERS = frozenset({"opencv", "ffmpeg"})
+
 # auto: fp16 autocast for VideoMAE on CUDA, fp32 on CPU. BEATs and the fusion
 # model always run in fp32 (BEATs' fbank overflows fp16).
 SUPPORTED_PRECISIONS = frozenset({"auto", "fp32", "fp16", "bf16"})
@@ -134,11 +136,26 @@ class Settings:
     # Videos analysed at the same time. Each slot has its own preprocessing workers
     # (preprocess_workers processes, ~210 MB of /dev/shm at 1080p) and shares the
     # loaded models; decoding is CPU-bound, so 2 slots keep the GPU busier.
-    inference_slots: int = 2
+    inference_slots: int = 3
+    # Slots (capped to inference_slots - 1) only videos of at most short_video_seconds may use, so short clips never
+    # wait behind long videos. Waiting videos get a slot shortest first; one waiting
+    # longer than slot_aging_seconds goes first regardless of length (no starvation).
+    reserved_short_slots: int = 1
+    short_video_seconds: float = 20.0
+    slot_aging_seconds: float = 60.0
     # Requests accepted at once (downloading, waiting for a slot or running);
     # beyond this /api/v1/process answers 429 with Retry-After instead of queueing.
-    max_pending_jobs: int = 8
+    max_pending_jobs: int = 16
+    # Accepted jobs downloading from MinIO at the same time; the others wait.
+    max_concurrent_downloads: int = 4
+    # Minimum Retry-After of a 429; the service raises it to its average job time.
     busy_retry_after_seconds: int = 10
+    # Frame decoder: "opencv" (cv2.VideoCapture, as in training) or "ffmpeg" (the
+    # ffmpeg CLI piping BGR frames: ~2x faster and far less CPU on 10-bit HEVC, but
+    # HDR colours differ from OpenCV, so validate scores before switching).
+    decoder: str = "opencv"
+    # ffmpeg decoding threads per video (0 = ffmpeg's automatic choice).
+    ffmpeg_threads: int = 0
     # Parallel HTTP range requests per video download; only for objects of at least
     # two parts. A relayed (high-latency) MinIO link gains ~1.5x with 4 parts.
     download_parts: int = 4
@@ -170,6 +187,16 @@ class Settings:
             raise ValueError("PICKLEBALL_INFERENCE_SLOTS must be >= 1")
         if self.max_pending_jobs < self.inference_slots:
             raise ValueError("PICKLEBALL_MAX_PENDING_JOBS must be >= PICKLEBALL_INFERENCE_SLOTS")
+        if self.reserved_short_slots < 0:
+            raise ValueError("PICKLEBALL_RESERVED_SHORT_SLOTS must be >= 0 (capped to slots - 1)")
+        if self.short_video_seconds < 0 or self.slot_aging_seconds <= 0:
+            raise ValueError("PICKLEBALL_SHORT_VIDEO_SECONDS must be >= 0, PICKLEBALL_SLOT_AGING_SECONDS > 0")
+        if self.max_concurrent_downloads < 1:
+            raise ValueError("PICKLEBALL_MAX_CONCURRENT_DOWNLOADS must be >= 1")
+        if self.decoder not in SUPPORTED_DECODERS:
+            raise ValueError("PICKLEBALL_DECODER must be opencv or ffmpeg")
+        if self.ffmpeg_threads < 0:
+            raise ValueError("PICKLEBALL_FFMPEG_THREADS must be >= 0")
         if self.download_parts < 1:
             raise ValueError("PICKLEBALL_DOWNLOAD_PARTS must be >= 1")
         if self.busy_retry_after_seconds < 1 or self.result_cache_seconds < 0:
@@ -201,7 +228,21 @@ class Settings:
                 os.getenv("PICKLEBALL_MAX_VIDEO_BYTES", str(defaults.max_video_bytes))
             ),
             inference_slots=int(os.getenv("PICKLEBALL_INFERENCE_SLOTS", str(defaults.inference_slots))),
+            reserved_short_slots=int(
+                os.getenv("PICKLEBALL_RESERVED_SHORT_SLOTS", str(defaults.reserved_short_slots))
+            ),
+            short_video_seconds=float(
+                os.getenv("PICKLEBALL_SHORT_VIDEO_SECONDS", str(defaults.short_video_seconds))
+            ),
+            slot_aging_seconds=float(
+                os.getenv("PICKLEBALL_SLOT_AGING_SECONDS", str(defaults.slot_aging_seconds))
+            ),
             max_pending_jobs=int(os.getenv("PICKLEBALL_MAX_PENDING_JOBS", str(defaults.max_pending_jobs))),
+            max_concurrent_downloads=int(
+                os.getenv("PICKLEBALL_MAX_CONCURRENT_DOWNLOADS", str(defaults.max_concurrent_downloads))
+            ),
+            decoder=os.getenv("PICKLEBALL_DECODER", defaults.decoder).strip().lower(),
+            ffmpeg_threads=int(os.getenv("PICKLEBALL_FFMPEG_THREADS", str(defaults.ffmpeg_threads))),
             busy_retry_after_seconds=int(
                 os.getenv("PICKLEBALL_BUSY_RETRY_AFTER_SECONDS", str(defaults.busy_retry_after_seconds))
             ),

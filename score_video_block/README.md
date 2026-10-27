@@ -108,9 +108,15 @@ variables take precedence.
 | `PICKLEBALL_GPU_PREPROCESS` | `false` | Resize/normalize frames on the GPU (pixels may differ by one 8-bit level) |
 | `PICKLEBALL_PREPROCESS_WORKERS` | `8` | Exact frame preprocessing processes (shared memory); `0` = threads in the API process |
 | `PICKLEBALL_MAX_VIDEO_BYTES` | `536870912` | Maximum MinIO object size |
-| `PICKLEBALL_INFERENCE_SLOTS` | `2` | Videos analysed at the same time; each slot has its own `PICKLEBALL_PREPROCESS_WORKERS` processes (~210 MB of `/dev/shm` at 1080p) and shares the loaded models |
-| `PICKLEBALL_MAX_PENDING_JOBS` | `8` | Requests accepted at once (downloading, waiting for a slot or running); more get `429` |
-| `PICKLEBALL_BUSY_RETRY_AFTER_SECONDS` | `10` | `Retry-After` sent with `429` |
+| `PICKLEBALL_INFERENCE_SLOTS` | `3` | Videos analysed at the same time; each slot has its own `PICKLEBALL_PREPROCESS_WORKERS` processes (~210 MB of `/dev/shm` at 1080p) and shares the loaded models |
+| `PICKLEBALL_RESERVED_SHORT_SLOTS` | `1` | Slots only short videos may use (capped to slots - 1), so short clips never wait behind long ones |
+| `PICKLEBALL_SHORT_VIDEO_SECONDS` | `20` | Longest video counted as short |
+| `PICKLEBALL_SLOT_AGING_SECONDS` | `60` | Waiting videos get a slot shortest first; one waiting this long goes first |
+| `PICKLEBALL_MAX_PENDING_JOBS` | `16` | Requests accepted at once (downloading, waiting for a slot or running); more get `429` |
+| `PICKLEBALL_MAX_CONCURRENT_DOWNLOADS` | `4` | Accepted jobs downloading from MinIO at once |
+| `PICKLEBALL_BUSY_RETRY_AFTER_SECONDS` | `10` | Minimum `Retry-After` sent with `429` (raised to half the average job time) |
+| `PICKLEBALL_DECODER` | `opencv` | `opencv` (as in training) or `ffmpeg` (ffmpeg CLI: ~2x faster, ~1/3 of the CPU on 10-bit HEVC, but HDR colours differ: validate scores first) |
+| `PICKLEBALL_FFMPEG_THREADS` | `0` | ffmpeg decoding threads per video (`0` = automatic) |
 | `PICKLEBALL_DOWNLOAD_PARTS` | `4` | Parallel range requests per video download |
 | `PICKLEBALL_DOWNLOAD_PART_MIN_BYTES` | `8388608` | Smallest part; smaller videos use one request |
 | `PICKLEBALL_RESULT_CACHE_SECONDS` | `600` | Completed results kept by `job_id` for client retries; `0` disables |
@@ -195,8 +201,13 @@ docker compose logs -f            # wait for "Models loaded"
 curl localhost:8888/ready
 ```
 
-`docker-compose.yml` sets `--gpus`, `shm_size: 1gb` (preprocessing workers),
-`env_file: .env` and the weights volume. The image keeps the repository layout
+`docker-compose.yml` runs `AI_REPLICAS` (default 2) model servers on the GPU behind an
+nginx load balancer (`deploy/nginx-lb.conf`) on port 8888. nginx sends each job to the
+replica with the fewest open connections (a job holds its connection until scored)
+and skips a replica that answers `429`. Scale with
+`AI_REPLICAS=3 docker compose up -d` (each replica loads the models once, ~3 GB of
+VRAM). The weights directory is `PICKLEBALL_WEIGHTS_DIR` (default `./src/weights`).
+It also sets `--gpus`, `shm_size: 2gb` (preprocessing workers) and `env_file: .env`. The image keeps the repository layout
 under `/app` (`PYTHONPATH=/app/src`), so relative paths in `.env` work unchanged.
 CPU-only image: `docker build --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cpu -t pickleball-track .`
 and run it with `--shm-size=1g -e PICKLEBALL_DEVICE=cpu`.
@@ -216,7 +227,15 @@ python scripts/infer_video.py --video match.mp4 [--checkpoint best.pt --hit-thre
 | `POST /api/v1/process` | `200` job response | see below |
 | `GET /stats` | `200` slots, pending jobs and cached results | – |
 
-Request (only `.mp4` / `.mov` object keys are accepted):
+Request (only `.mp4` / `.mov` object keys are accepted). Only `job_id`, `bucket` and
+`object_key` are required; `minio_endpoint` is needed unless `MINIO_PUBLIC_ENDPOINT`
+is set. The other fields are optional context (validated when present):
+
+```json
+{"job_id": "job-1", "result_id": "job-1", "bucket": "videos", "object_key": "matches/match.MOV", "mode": "VIDEO", "attempt": 1}
+```
+
+Full form accepted for older clients:
 
 ```json
 {
@@ -277,7 +296,13 @@ inference. Jobs are not cancelled when the client disconnects.
 The backend (`haui_sict_fitness_score`) treats `429`/`503` with `Retry-After` as busy
 (waits and resends without spending its retry budget) and scales its timeout with
 video duration and file size. Keep its `AI_MAX_CONCURRENCY` × worker replicas at or
-below `PICKLEBALL_MAX_PENDING_JOBS`.
+below `AI_REPLICAS` × `PICKLEBALL_MAX_PENDING_JOBS`.
+
+Measured on the A30 server (3 s 1080p clips; 60 s iPhone HDR clips): the model is
+~17% of the time of a long video; decoding 10-bit HEVC with OpenCV takes the rest
+and ~28 CPU cores, so long-video throughput (~1.2/min) does not grow with more
+slots or replicas. Short clips scale with replicas: 3 replicas x 2 slots score
+~120 clips/min, and short clips stay under ~9 s (p95) while long videos run.
 
 ## Tests
 

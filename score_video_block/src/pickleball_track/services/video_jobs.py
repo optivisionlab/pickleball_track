@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
+import threading
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
@@ -65,10 +66,13 @@ class VideoJobService:
         settings: Settings,
         predictor: VideoPredictor | None,
         minio_client_factory: Callable[[str, Settings], Any] = create_minio_client,
+        download_slots: threading.Semaphore | None = None,
     ):
         self.settings = settings
         self.predictor = predictor
         self.minio_client_factory = minio_client_factory
+        # Shared by all requests (created in the app lifespan): caps parallel downloads.
+        self.download_slots = download_slots
 
     def _check_size(self, size: int) -> None:
         if size > self.settings.max_video_bytes:
@@ -107,7 +111,7 @@ class VideoJobService:
             raise ProcessingError("Incomplete video download")
 
     def process(
-        self, *, job_id: str, bucket: str, object_key: str, minio_endpoint: str
+        self, *, job_id: str, bucket: str, object_key: str, minio_endpoint: str | None = None
     ) -> JobScore:
         started_at = time.perf_counter()
         suffix = Path(object_key).suffix.lower()
@@ -117,6 +121,8 @@ class VideoJobService:
             raise ServiceUnavailableError("Model checkpoint is not configured or unavailable")
 
         endpoint = self.settings.minio_public_endpoint or minio_endpoint
+        if not endpoint:
+            raise InvalidInputError("minio_endpoint is required when MINIO_PUBLIC_ENDPOINT is not set")
         if endpoint != minio_endpoint:
             logger.info(
                 "Using configured MinIO endpoint",
@@ -129,7 +135,11 @@ class VideoJobService:
                 size = client.stat_object(bucket, object_key).size
                 self._check_size(size)
                 download_started_at = time.perf_counter()
-                self._download(client, bucket, object_key, local_video, size)
+                if self.download_slots is None:
+                    self._download(client, bucket, object_key, local_video, size)
+                else:
+                    with self.download_slots:
+                        self._download(client, bucket, object_key, local_video, size)
                 download_seconds = time.perf_counter() - download_started_at
                 self._check_size(local_video.stat().st_size)
                 result = self.predictor.predict(local_video)

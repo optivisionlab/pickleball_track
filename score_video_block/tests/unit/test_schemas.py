@@ -20,6 +20,18 @@ def test_request_rejects_invalid_contract_values(valid_job_request, override):
         VideoJobRequest(**(valid_job_request | override))
 
 
+def test_minimal_request_needs_only_job_bucket_and_key():
+    request = VideoJobRequest(job_id="job-1", bucket="videos", object_key="a/b.mp4")
+
+    assert (request.mode, request.attempt, request.result_id, request.detail) == ("VIDEO", 1, None, None)
+
+
+@pytest.mark.parametrize("missing", ["job_id", "bucket", "object_key"])
+def test_request_requires_job_bucket_and_key(valid_job_request, missing):
+    with pytest.raises(ValidationError):
+        VideoJobRequest(**{k: v for k, v in valid_job_request.items() if k != missing})
+
+
 def test_response_matches_product_contract():
     response = VideoJobResponse(
         jobId="job-1",

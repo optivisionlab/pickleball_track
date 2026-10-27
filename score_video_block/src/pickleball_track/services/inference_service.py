@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import queue
 import time
 from collections.abc import Iterator
 from contextlib import closing
@@ -36,6 +35,7 @@ from ..pipelines.preprocessing import (
     get_video_info,
     load_audio,
 )
+from .slot_scheduler import SlotScheduler
 
 logger = logging.getLogger(__name__)
 
@@ -45,28 +45,53 @@ class VideoInferenceService:
 
     The models are shared (inference-mode forwards keep no state). A
     ``ProcessFramePool`` serves one video at a time, so every slot owns one; the
-    first slot reuses the bundle's pool. Extra callers wait for a free slot.
+    first slot reuses the bundle's pool. Extra callers wait for a free slot, which
+    ``SlotScheduler`` hands out shortest video first, keeping ``reserved_short_slots``
+    for videos of at most ``short_video_seconds``.
     """
 
-    def __init__(self, models: ModelBundle, params: InferenceParams = InferenceParams(), slots: int = 1):
+    def __init__(
+        self,
+        models: ModelBundle,
+        params: InferenceParams = InferenceParams(),
+        slots: int = 1,
+        *,
+        reserved_short_slots: int = 0,
+        short_video_seconds: float = 0.0,
+        slot_aging_seconds: float = 60.0,
+        decoder: str = "opencv",
+        ffmpeg_threads: int = 0,
+    ):
         if slots < 1:
             raise ValueError("slots must be >= 1")
         self.models = models
         self.params = params
         self.slots = slots
+        self.decoder = decoder
+        self.ffmpeg_threads = ffmpeg_threads
         self._extra_pools: list[ProcessFramePool] = []
-        self._free: queue.Queue[ProcessFramePool | None] = queue.Queue()
-        self._free.put(models.frame_pool)
+        pools: list[ProcessFramePool | None] = [models.frame_pool]
         for _ in range(slots - 1):
             pool = None
             if models.frame_pool is not None:
                 pool = ProcessFramePool(models.processor, models.frame_pool.workers)
                 self._extra_pools.append(pool)
-            self._free.put(pool)
+            pools.append(pool)
+        self.scheduler: SlotScheduler[ProcessFramePool | None] = SlotScheduler(
+            pools,
+            reserved_short=min(reserved_short_slots, slots - 1),
+            short_seconds=short_video_seconds,
+            aging_seconds=slot_aging_seconds,
+        )
 
     @property
     def busy_slots(self) -> int:
-        return self.slots - self._free.qsize()
+        return self.scheduler.busy
+
+    @property
+    def waiting(self) -> tuple[int, int]:
+        """(short, long) videos waiting for a slot."""
+        return self.scheduler.waiting()
 
     def close(self) -> None:
         """Stop the preprocessing workers of the extra slots (the bundle closes its own)."""
@@ -108,7 +133,7 @@ class VideoInferenceService:
         models = self.models
         if pool is not None and models.frame_preprocessor is None:
             if pool.fits(info.height, info.width):
-                yield from pool.chunks(video_path, timeline)
+                yield from pool.chunks(video_path, timeline, decoder=self.decoder, ffmpeg_threads=self.ffmpeg_threads)
                 return
             logger.warning(
                 "Not enough shared memory for preprocessing workers; using threads "
@@ -116,7 +141,7 @@ class VideoInferenceService:
                 extra={"required_bytes": pool.ring_bytes(info.height, info.width)},
             )
         preprocess = models.frame_preprocessor or ProcessorFrames(models.processor)
-        with closing(iter_frames(video_path)) as frames:
+        with closing(iter_frames(video_path, decoder=self.decoder, ffmpeg_threads=self.ffmpeg_threads)) as frames:
             yield from preprocessed_chunks(frames, preprocess, timeline)
 
     def predict(self, video_path: str | Path) -> dict[str, Any]:
@@ -125,17 +150,20 @@ class VideoInferenceService:
             raise FileNotFoundError(video_path)
 
         models = self.models
+        # Metadata first (cheap): the scheduler orders waiting videos by duration.
+        info = get_video_info(video_path)
         waited_at = time.perf_counter()
-        pool = self._free.get()
+        pool, short = self.scheduler.acquire(info.duration)
         try:
             started_at = time.perf_counter()
-            info = get_video_info(video_path)
             logger.info(
                 "Video metadata loaded",
                 extra={
                     "fps": info.fps,
                     "frames": info.num_frames,
                     "video_duration_seconds": info.duration,
+                    "short_video": short,
+                    "decoder": self.decoder,
                     "slot_wait_seconds": round(started_at - waited_at, 4),
                 },
             )
@@ -181,5 +209,5 @@ class VideoInferenceService:
                 },
             )
         finally:
-            self._free.put(pool)
+            self.scheduler.release(pool, short)
         return result
