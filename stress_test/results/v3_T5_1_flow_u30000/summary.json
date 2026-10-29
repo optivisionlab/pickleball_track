@@ -1,0 +1,172 @@
+{
+ "GET /api/auth/me": {
+  "samples": 72328,
+  "errors": 28750,
+  "error_pct": 39.75,
+  "avg_ms": 6404.6,
+  "min_ms": 0,
+  "p50_ms": 4306.0,
+  "p90_ms": 16928.3,
+  "p95_ms": 20749.6,
+  "p99_ms": 28804.7,
+  "max_ms": 40053,
+  "throughput_rps": 520.76,
+  "kb_per_sec": 649.7,
+  "max_threads": 30000,
+  "duration_s": 138.9,
+  "error_codes": {
+   "Non HTTP response code: java.net.BindExc": 22468,
+   "Non HTTP response code: java.net.SocketE": 4831,
+   "Non HTTP response code: org.apache.http.": 1451
+  }
+ },
+ "GET /api/enrollments/my-courses": {
+  "samples": 67406,
+  "errors": 27604,
+  "error_pct": 40.95,
+  "avg_ms": 7272.7,
+  "min_ms": 0,
+  "p50_ms": 4706.0,
+  "p90_ms": 19610.0,
+  "p95_ms": 23537.0,
+  "p99_ms": 29369.4,
+  "max_ms": 41114,
+  "throughput_rps": 485.81,
+  "kb_per_sec": 752.5,
+  "max_threads": 30000,
+  "duration_s": 138.8,
+  "error_codes": {
+   "Non HTTP response code: java.net.BindExc": 21466,
+   "Non HTTP response code: java.net.SocketE": 4718,
+   "Non HTTP response code: org.apache.http.": 1420
+  }
+ },
+ "GET /api/notifications": {
+  "samples": 47485,
+  "errors": 28173,
+  "error_pct": 59.33,
+  "avg_ms": 5663.2,
+  "min_ms": 0,
+  "p50_ms": 1728.0,
+  "p90_ms": 17009.0,
+  "p95_ms": 21264.6,
+  "p99_ms": 27435.3,
+  "max_ms": 40126,
+  "throughput_rps": 345.64,
+  "kb_per_sec": 680.0,
+  "max_threads": 30000,
+  "duration_s": 137.4,
+  "error_codes": {
+   "Non HTTP response code: java.net.BindExc": 21532,
+   "Non HTTP response code: java.net.SocketE": 4951,
+   "Non HTTP response code: org.apache.http.": 1690
+  }
+ },
+ "GET /api/sports": {
+  "samples": 51846,
+  "errors": 29036,
+  "error_pct": 56.0,
+  "avg_ms": 5750.5,
+  "min_ms": 0,
+  "p50_ms": 3084.0,
+  "p90_ms": 16353.5,
+  "p95_ms": 20417.8,
+  "p99_ms": 26516.6,
+  "max_ms": 39659,
+  "throughput_rps": 376.54,
+  "kb_per_sec": 703.4,
+  "max_threads": 30000,
+  "duration_s": 137.7,
+  "error_codes": {
+   "Non HTTP response code: java.net.BindExc": 21874,
+   "Non HTTP response code: java.net.SocketE": 5472,
+   "Non HTTP response code: org.apache.http.": 1690
+  }
+ },
+ "GET /api/tasks": {
+  "samples": 63198,
+  "errors": 28690,
+  "error_pct": 45.4,
+  "avg_ms": 6899.3,
+  "min_ms": 0,
+  "p50_ms": 4894.0,
+  "p90_ms": 18172.0,
+  "p95_ms": 22418.9,
+  "p99_ms": 27068.2,
+  "max_ms": 40264,
+  "throughput_rps": 455.67,
+  "kb_per_sec": 1387.2,
+  "max_threads": 30000,
+  "duration_s": 138.7,
+  "error_codes": {
+   "Non HTTP response code: java.net.BindExc": 20705,
+   "Non HTTP response code: java.net.SocketE": 4689,
+   "Non HTTP response code: org.apache.http.": 3296
+  }
+ },
+ "GET /api/video-results": {
+  "samples": 59802,
+  "errors": 29791,
+  "error_pct": 49.82,
+  "avg_ms": 6969.8,
+  "min_ms": 0,
+  "p50_ms": 4849.0,
+  "p90_ms": 18506.9,
+  "p95_ms": 23243.9,
+  "p99_ms": 30171.8,
+  "max_ms": 41315,
+  "throughput_rps": 431.74,
+  "kb_per_sec": 787.3,
+  "max_threads": 30000,
+  "duration_s": 138.5,
+  "error_codes": {
+   "Non HTTP response code: java.net.BindExc": 20591,
+   "Non HTTP response code: java.net.SocketE": 5264,
+   "Non HTTP response code: org.apache.http.": 3936
+  }
+ },
+ "GET /api/video-results/{id}/status": {
+  "samples": 55827,
+  "errors": 33758,
+  "error_pct": 60.47,
+  "avg_ms": 6330.9,
+  "min_ms": 0,
+  "p50_ms": 4161.0,
+  "p90_ms": 17121.8,
+  "p95_ms": 21330.4,
+  "p99_ms": 27172.5,
+  "max_ms": 40939,
+  "throughput_rps": 404.48,
+  "kb_per_sec": 551.4,
+  "max_threads": 30000,
+  "duration_s": 138.0,
+  "error_codes": {
+   "Non HTTP response code: java.net.BindExc": 21295,
+   "Non HTTP response code: java.net.SocketE": 5542,
+   "Non HTTP response code: org.apache.http.": 2954,
+   "400": 3967
+  }
+ },
+ "TOTAL": {
+  "samples": 417892,
+  "errors": 205802,
+  "error_pct": 49.25,
+  "avg_ms": 6525.1,
+  "min_ms": 0,
+  "p50_ms": 4229.0,
+  "p90_ms": 17740.0,
+  "p95_ms": 22161.0,
+  "p99_ms": 28345.0,
+  "max_ms": 41315,
+  "throughput_rps": 3008.15,
+  "kb_per_sec": 5488.5,
+  "max_threads": 30000,
+  "duration_s": 138.9,
+  "error_codes": {
+   "Non HTTP response code: java.net.BindExc": 149931,
+   "Non HTTP response code: java.net.SocketE": 35467,
+   "Non HTTP response code: org.apache.http.": 16437,
+   "400": 3967
+  }
+ }
+}

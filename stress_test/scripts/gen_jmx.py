@@ -118,7 +118,7 @@ def plan(name, tg_children, plan_children=()):
 
 JSON_H = headers([("Content-Type", "application/json")])
 AUTH_H = headers([("Content-Type", "application/json"), ("Authorization", "Bearer ${token}")])
-LOGIN_BODY = '{"email":"${email}","password":"123456"}'
+LOGIN_BODY = '{"email":"${email}","password":"${__P(password)}"}'
 ACCOUNTS = csv_ds(P("accounts", "accounts.csv"), "email")
 
 
@@ -190,6 +190,22 @@ def build():
         (http("GET /api/video-results/{id}/status", "GET", "/api/video-results/${rid}/status"), []),
         (http("GET /api/sports", "GET", "/api/sports"), []),
         (http("GET /api/notifications", "GET", "/api/notifications"), []),
+        (think(), []),
+    ]))
+    # 4c) Giáo viên: đăng nhập 1 lần rồi xem sổ điểm / thống kê / bài nộp (truy vấn nặng)
+    course = P("course", "6ae093a7bf50c057267d76e7")
+    task = P("task", "6ae093a7bf50c057267d76e9")
+    teacher_body = '{"email":"${__P(teacher,longdv@haui.edu.vn)}","password":"${__P(teacher_password)}"}'
+    (OUT / "teacher_flow.jmx").write_text(plan("Teacher flow", [
+        once_only([
+            (http("POST /api/auth/login (teacher)", "POST", "/api/auth/login", body=teacher_body), [
+                (JSON_H, []), (json_extract("token", "$.data.accessToken"), [])]),
+        ]),
+        (AUTH_H, []),
+        (http("GET /teacher/gradebook", "GET", f"/api/teacher/courses/{course}/gradebook"), []),
+        (http("GET /teacher/stats", "GET", f"/api/teacher/courses/{course}/stats"), []),
+        (http("GET /teacher/course tasks", "GET", f"/api/teacher/courses/{course}/tasks"), []),
+        (http("GET /tasks/{id}/submissions", "GET", f"/api/tasks/{task}/submissions"), []),
         (think(), []),
     ]))
     # 5) AI trực tiếp: mỗi request 1 job_id mới (tránh cache kết quả của AI)

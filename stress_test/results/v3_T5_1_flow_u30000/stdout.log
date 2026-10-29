@@ -1,0 +1,21 @@
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+Creating summariser <summary>
+Created the tree successfully using be_user_flow_tok.jmx
+Starting standalone test @ 2026 Oct 28 16:26:44 UTC (1793204804824)
+Waiting for possible Shutdown/StopTestNow/HeapDump/ThreadDump message on port 4445
+summary +  25782 in 00:00:15 = 1708.2/s Avg:  1663 Min:    13 Max:  4536 Err:     0 (0.00%) Active: 7529 Started: 7529 Finished: 0
+summary +  57634 in 00:00:30 = 1921.2/s Avg:  6314 Min:  2270 Max: 12091 Err:     0 (0.00%) Active: 22526 Started: 22526 Finished: 0
+summary =  83416 in 00:00:45 = 1849.9/s Avg:  4876 Min:    13 Max: 12091 Err:     0 (0.00%)
+summary +  98151 in 00:00:30 = 3271.7/s Avg:  6086 Min:     2 Max: 28708 Err: 55260 (56.30%) Active: 30000 Started: 30000 Finished: 0
+summary = 181567 in 00:01:15 = 2417.9/s Avg:  5530 Min:     2 Max: 28708 Err: 55260 (30.44%)
+summary + 117494 in 00:00:30 = 3916.5/s Avg:  6719 Min:     0 Max: 39677 Err: 79882 (67.99%) Active: 30000 Started: 30000 Finished: 0
+summary = 299061 in 00:01:45 = 2845.7/s Avg:  5997 Min:     0 Max: 39677 Err: 135142 (45.19%)
+summary + 116906 in 00:00:30 = 3896.9/s Avg:  7618 Min:     0 Max: 41315 Err: 70563 (60.36%) Active: 1925 Started: 30000 Finished: 28075
+summary = 415967 in 00:02:15 = 3079.1/s Avg:  6453 Min:     0 Max: 41315 Err: 205705 (49.45%)
+summary +   1925 in 00:00:04 =  462.1/s Avg: 22072 Min:  1580 Max: 36225 Err:    97 (5.04%) Active: 0 Started: 30000 Finished: 30000
+summary = 417892 in 00:02:19 = 3000.8/s Avg:  6525 Min:     0 Max: 41315 Err: 205802 (49.25%)
+Tidying up ...    @ 2026 Oct 28 16:29:04 UTC (1793204944167)
+... end of run

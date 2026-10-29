@@ -1,0 +1,31 @@
+label                                            n   err%      avg     p50     p90     p95      p99     max      rps
+GET /api/auth/me                             72328  39.75   6404.6  4306.0 16928.3 20749.6  28804.7   40053   520.76
+                                             errors: {'Non HTTP response code: java.net.BindExc': 22468, 'Non HTTP response code: java.net.SocketE': 4831, 'Non HTTP response code: org.apache.http.': 1451}
+GET /api/enrollments/my-courses              67406  40.95   7272.7  4706.0 19610.0 23537.0  29369.4   41114   485.81
+                                             errors: {'Non HTTP response code: java.net.BindExc': 21466, 'Non HTTP response code: java.net.SocketE': 4718, 'Non HTTP response code: org.apache.http.': 1420}
+GET /api/notifications                       47485  59.33   5663.2  1728.0 17009.0 21264.6  27435.3   40126   345.64
+                                             errors: {'Non HTTP response code: java.net.BindExc': 21532, 'Non HTTP response code: java.net.SocketE': 4951, 'Non HTTP response code: org.apache.http.': 1690}
+GET /api/sports                              51846   56.0   5750.5  3084.0 16353.5 20417.8  26516.6   39659   376.54
+                                             errors: {'Non HTTP response code: java.net.BindExc': 21874, 'Non HTTP response code: java.net.SocketE': 5472, 'Non HTTP response code: org.apache.http.': 1690}
+GET /api/tasks                               63198   45.4   6899.3  4894.0 18172.0 22418.9  27068.2   40264   455.67
+                                             errors: {'Non HTTP response code: java.net.BindExc': 20705, 'Non HTTP response code: java.net.SocketE': 4689, 'Non HTTP response code: org.apache.http.': 3296}
+GET /api/video-results                       59802  49.82   6969.8  4849.0 18506.9 23243.9  30171.8   41315   431.74
+                                             errors: {'Non HTTP response code: java.net.BindExc': 20591, 'Non HTTP response code: java.net.SocketE': 5264, 'Non HTTP response code: org.apache.http.': 3936}
+GET /api/video-results/{id}/status           55827  60.47   6330.9  4161.0 17121.8 21330.4  27172.5   40939   404.48
+                                             errors: {'Non HTTP response code: java.net.BindExc': 21295, 'Non HTTP response code: java.net.SocketE': 5542, 'Non HTTP response code: org.apache.http.': 2954, '400': 3967}
+TOTAL                                       417892  49.25   6525.1  4229.0 17740.0 22161.0  28345.0   41315  3008.15
+                                             errors: {'Non HTTP response code: java.net.BindExc': 149931, 'Non HTTP response code: java.net.SocketE': 35467, 'Non HTTP response code: org.apache.http.': 16437, '400': 3967}
+peak haui-fitness-ai-worker-1         cpu=    1.2%  mem= 16.1% of limit
+peak haui-fitness-backend-1           cpu= 1629.0%  mem= 58.6% of limit
+peak haui-fitness-frontend-1          cpu=    0.0%  mem=  7.2% of limit
+peak haui-fitness-kafka-1             cpu=  255.9%  mem= 89.9% of limit
+peak haui-fitness-minio-1             cpu=  412.2%  mem= 24.1% of limit
+peak haui-fitness-mongodb-1           cpu=  857.8%  mem= 12.3% of limit
+peak haui-fitness-redis-1             cpu=    4.2%  mem=  7.6% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=   37.9%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=   37.5%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-5    cpu=    0.3%  mem=  3.1% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=   35.7%  mem=  3.3% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    2.3%  mem=  0.0% of limit
+peak GPU util=0%  mem=14924MiB
+container events: none

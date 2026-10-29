@@ -1,0 +1,10 @@
+{
+ "name": "v3_H2_upload_100",
+ "concurrent": 100,
+ "ok": 100,
+ "errors": [],
+ "wall_s": 58.4,
+ "avg_s": 53.03,
+ "max_s": 58.28,
+ "aggregate_MBps": 172.4
+}

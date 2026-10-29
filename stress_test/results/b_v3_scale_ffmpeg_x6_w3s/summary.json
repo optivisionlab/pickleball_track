@@ -1,0 +1,36 @@
+{
+ "POST /api/v1/process": {
+  "samples": 24,
+  "errors": 0,
+  "error_pct": 0.0,
+  "avg_ms": 6353.4,
+  "min_ms": 5234,
+  "p50_ms": 6183.5,
+  "p90_ms": 7532.7,
+  "p95_ms": 7949.6,
+  "p99_ms": 8452.2,
+  "max_ms": 8581,
+  "throughput_rps": 0.57,
+  "kb_per_sec": 0.2,
+  "max_threads": 4,
+  "duration_s": 42.1,
+  "error_codes": {}
+ },
+ "TOTAL": {
+  "samples": 24,
+  "errors": 0,
+  "error_pct": 0.0,
+  "avg_ms": 6353.4,
+  "min_ms": 5234,
+  "p50_ms": 6183.5,
+  "p90_ms": 7532.7,
+  "p95_ms": 7949.6,
+  "p99_ms": 8452.2,
+  "max_ms": 8581,
+  "throughput_rps": 0.57,
+  "kb_per_sec": 0.2,
+  "max_threads": 4,
+  "duration_s": 42.1,
+  "error_codes": {}
+ }
+}

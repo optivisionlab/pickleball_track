@@ -1,0 +1,105 @@
+{
+ "name": "v3_H2_T3_5_real40",
+ "args": {
+  "name": "v3_H2_T3_5_real40",
+  "base": "http://127.0.0.1:8000",
+  "duration": 30.0,
+  "ramp": 1.0,
+  "browsers": 0,
+  "teachers": 0,
+  "pollers": 0,
+  "think_min": 3,
+  "think_max": 8,
+  "poll": 5.0,
+  "submit_every": 0,
+  "short_ratio": 0.8,
+  "double_click": 0,
+  "burst": false,
+  "login_burst": 0,
+  "login_window": 30,
+  "exam_submits": 0,
+  "submit_window": 60.0,
+  "real_list": "/home/devlab1/loadtest/real40.txt",
+  "max_wait": 7200,
+  "max_conn": 2000
+ },
+ "wall_s": 986.0,
+ "endpoints": {
+  "GET /status (own)": {
+   "n": 3636,
+   "avg": 74.9,
+   "p50": 35.0,
+   "p95": 65.5,
+   "p99": 1064.0,
+   "max": 9180.2,
+   "codes": {
+    "200": 3635,
+    "EXC:RemoteProtocolError": 1
+   }
+  },
+  "POST /confirm-upload": {
+   "n": 40,
+   "avg": 944.2,
+   "p50": 250.7,
+   "p95": 3772.5,
+   "p99": 6030.5,
+   "max": 7272.6,
+   "codes": {
+    "201": 40
+   }
+  },
+  "POST /upload-url": {
+   "n": 40,
+   "avg": 1309.6,
+   "p50": 234.9,
+   "p95": 4802.2,
+   "p99": 6356.6,
+   "max": 7183.5,
+   "codes": {
+    "200": 40
+   }
+  },
+  "PUT minio": {
+   "n": 40,
+   "avg": 13126.6,
+   "p50": 12499.5,
+   "p95": 27204.0,
+   "p99": 28170.5,
+   "max": 28444.9,
+   "codes": {
+    "200": 40
+   }
+  }
+ },
+ "api": {
+  "n": 3716,
+  "rps": 3.8,
+  "system_errors": 1,
+  "system_error_pct": 0.027,
+  "p50": 35.3,
+  "p95": 75.6,
+  "p99": 2258.3
+ },
+ "submissions_short": {
+  "total": 1,
+  "ok": 1,
+  "errors": [],
+  "submit_p95_ms": 16446.0,
+  "e2e_avg_s": 37.9,
+  "e2e_p50_s": 37.9,
+  "e2e_p95_s": 37.9,
+  "e2e_max_s": 37.925,
+  "last_done_s": 80.17
+ },
+ "submissions_long": {
+  "total": 39,
+  "ok": 39,
+  "errors": [],
+  "submit_p95_ms": 29460.1,
+  "e2e_avg_s": 491.3,
+  "e2e_p50_s": 494.7,
+  "e2e_p95_s": 900.7,
+  "e2e_max_s": 945.343,
+  "last_done_s": 986.0
+ }
+}

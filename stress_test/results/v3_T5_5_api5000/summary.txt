@@ -1,0 +1,23 @@
+label                                            n   err%      avg     p50     p90     p95      p99     max      rps
+GET /api/auth/me                             28295    0.0   7412.6  7562.0 10682.0 11826.3  13724.2   20639    92.51
+GET /api/enrollments/my-courses              27523    0.0   7635.5  7602.0 11027.0 12075.7  13760.8   20700    90.18
+GET /api/notifications                       24065    0.0   7856.4  7735.0 10731.0 11828.8  13711.7   20912    79.53
+GET /api/sports                              24719    0.0   7067.3  6972.0  9937.2 11023.1  12894.6   19273    81.49
+GET /api/tasks                               26796    0.0   7121.3  7025.0 10113.5 11027.2  12840.8   19262    87.82
+GET /api/video-results                       26167    0.0   7792.4  7740.0 10798.0 11777.0  13638.4   21130    85.84
+GET /api/video-results/{id}/status           25462    0.0   7796.6  7749.5 10813.0 11859.9  13882.0   20797    83.75
+TOTAL                                       183027    0.0   7522.9  7485.0 10617.0 11650.0  13585.0   21130   598.28
+peak haui-fitness-ai-worker-1         cpu=   69.2%  mem= 18.0% of limit
+peak haui-fitness-backend-1           cpu= 1346.3%  mem= 56.4% of limit
+peak haui-fitness-frontend-1          cpu=    4.0%  mem=  7.1% of limit
+peak haui-fitness-kafka-1             cpu=  373.4%  mem= 95.7% of limit
+peak haui-fitness-minio-1             cpu=  414.3%  mem= 26.4% of limit
+peak haui-fitness-mongodb-1           cpu=  812.3%  mem= 12.3% of limit
+peak haui-fitness-redis-1             cpu=    6.5%  mem=  5.8% of limit
+peak pickleball-ai-pickleball-ai-1    cpu= 1462.0%  mem=  5.8% of limit
+peak pickleball-ai-pickleball-ai-3    cpu= 1085.1%  mem=  5.1% of limit
+peak pickleball-ai-pickleball-ai-5    cpu= 1448.9%  mem=  5.6% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=  694.5%  mem=  5.2% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    4.2%  mem=  0.0% of limit
+peak GPU util=100%  mem=15234MiB
+container events: none

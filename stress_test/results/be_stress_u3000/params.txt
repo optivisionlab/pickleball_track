@@ -1,1 +1,0 @@
--Jtokens=/home/devlab1/loadtest/jmeter/tokens.csv -Jthreads=3000 -Jramp=30 -Jduration=60 -Jhost=127.0.0.1

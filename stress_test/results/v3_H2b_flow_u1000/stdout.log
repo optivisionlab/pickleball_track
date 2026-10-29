@@ -1,0 +1,21 @@
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+Creating summariser <summary>
+Created the tree successfully using be_user_flow_tok.jmx
+Starting standalone test @ 2026 Oct 28 15:40:30 UTC (1793202030551)
+Waiting for possible Shutdown/StopTestNow/HeapDump/ThreadDump message on port 4445
+summary +      1 in 00:00:00 =    2.9/s Avg:    30 Min:    30 Max:    30 Err:     0 (0.00%) Active: 7 Started: 7 Finished: 0
+summary +  78408 in 00:00:29 = 2701.7/s Avg:   178 Min:     2 Max:  2219 Err: 11002 (14.03%) Active: 978 Started: 978 Finished: 0
+summary =  78409 in 00:00:29 = 2669.7/s Avg:   178 Min:     2 Max:  2219 Err: 11002 (14.03%)
+summary +  78975 in 00:00:30 = 2632.5/s Avg:   380 Min:     3 Max:  3730 Err: 11309 (14.32%) Active: 1000 Started: 1000 Finished: 0
+summary = 157384 in 00:00:59 = 2650.9/s Avg:   279 Min:     2 Max:  3730 Err: 22311 (14.18%)
+summary +  78703 in 00:00:30 = 2623.4/s Avg:   381 Min:     4 Max:  3163 Err: 11250 (14.29%) Active: 1000 Started: 1000 Finished: 0
+summary = 236087 in 00:01:29 = 2641.7/s Avg:   313 Min:     2 Max:  3730 Err: 33561 (14.22%)
+summary +  79026 in 00:00:30 = 2634.2/s Avg:   379 Min:     5 Max:  2828 Err: 11288 (14.28%) Active: 1000 Started: 1000 Finished: 0
+summary = 315113 in 00:01:59 = 2639.8/s Avg:   330 Min:     2 Max:  3730 Err: 44849 (14.23%)
+summary +   3571 in 00:00:01 = 2625.7/s Avg:   384 Min:    44 Max:  1599 Err:   435 (12.18%) Active: 0 Started: 1000 Finished: 1000
+summary = 318684 in 00:02:01 = 2639.6/s Avg:   330 Min:     2 Max:  3730 Err: 45284 (14.21%)
+Tidying up ...    @ 2026 Oct 28 15:42:31 UTC (1793202151360)
+... end of run

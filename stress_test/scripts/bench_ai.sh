@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Benchmark AI qua cổng 8888 với 3 tải chuẩn. bench_ai.sh <nhãn>
 L=$1; cd ~/loadtest
-K1=submissions/6ae093a7bf50c057267d76e9/6ae09b823a617db1b7c13a41.mp4
-K2=submissions/6ae093a7bf50c057267d76ea/6ae09b853a617db1b7c13a45.mov
+K1=loadtest/shot1_b.mp4
+K2=loadtest/shot2.mov
 J="-Jhost=127.0.0.1 -Jramp=0 -Jduration=3600"
 s(){ python3 - "$1" "$2" <<'PY'
 import csv,sys,statistics

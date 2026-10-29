@@ -1,0 +1,19 @@
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+Creating summariser <summary>
+Created the tree successfully using teacher_flow.jmx
+Starting standalone test @ 2026 Oct 28 06:51:15 UTC (1793170275877)
+Waiting for possible Shutdown/StopTestNow/HeapDump/ThreadDump message on port 4445
+summary +   1287 in 00:00:14 =   91.5/s Avg:   343 Min:    13 Max:   978 Err:     0 (0.00%) Active: 50 Started: 50 Finished: 0
+summary +   3162 in 00:00:30 =  105.4/s Avg:   473 Min:    27 Max:  1183 Err:     0 (0.00%) Active: 50 Started: 50 Finished: 0
+summary =   4449 in 00:00:44 =  101.0/s Avg:   435 Min:    13 Max:  1183 Err:     0 (0.00%)
+summary +   3140 in 00:00:30 =  104.6/s Avg:   478 Min:    38 Max:  1050 Err:     0 (0.00%) Active: 50 Started: 50 Finished: 0
+summary =   7589 in 00:01:14 =  102.5/s Avg:   453 Min:    13 Max:  1183 Err:     0 (0.00%)
+summary +   3153 in 00:00:30 =  105.1/s Avg:   475 Min:    35 Max:  1210 Err:     0 (0.00%) Active: 50 Started: 50 Finished: 0
+summary =  10742 in 00:01:44 =  103.2/s Avg:   459 Min:    13 Max:  1210 Err:     0 (0.00%)
+summary +   1705 in 00:00:17 =  102.7/s Avg:   482 Min:    38 Max:  1470 Err:     0 (0.00%) Active: 0 Started: 50 Finished: 50
+summary =  12447 in 00:02:01 =  103.1/s Avg:   463 Min:    13 Max:  1470 Err:     0 (0.00%)
+Tidying up ...    @ 2026 Oct 28 06:53:16 UTC (1793170396619)
+... end of run

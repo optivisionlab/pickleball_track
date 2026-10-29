@@ -1,1 +1,0 @@
--Jhost=127.0.0.1 -Jthreads=100 -Jramp=2 -Jduration=60

@@ -1,0 +1,31 @@
+label                                            n   err%      avg     p50     p90     p95      p99     max      rps
+GET /api/auth/me                             50161  14.31   5896.4  5375.0 11084.0 13809.0  18657.4   23436   380.84
+                                             errors: {'Non HTTP response code: java.net.SocketE': 6955, 'Non HTTP response code: org.apache.http.': 221}
+GET /api/enrollments/my-courses              47141  14.05   6654.6  5761.0 13701.0 16719.0  21381.6   23612   358.15
+                                             errors: {'Non HTTP response code: java.net.SocketE': 6425, 'Non HTTP response code: org.apache.http.': 199}
+GET /api/notifications                       32976  22.04   6322.6  5765.5 11190.5 14495.5  19302.0   23442   251.22
+                                             errors: {'Non HTTP response code: java.net.SocketE': 7022, 'Non HTTP response code: org.apache.http.': 247}
+GET /api/sports                              35946  20.29   6294.6  5596.0 11607.5 15093.8  19021.9   23388   273.73
+                                             errors: {'Non HTTP response code: java.net.SocketE': 7097, 'Non HTTP response code: org.apache.http.': 195}
+GET /api/tasks                               44144  13.35   7254.2  6078.0 15669.0 18504.8  20791.7   23902   335.45
+                                             errors: {'Non HTTP response code: java.net.SocketE': 5740, 'Non HTTP response code: org.apache.http.': 155}
+GET /api/video-results                       41512  11.95   7358.0  6234.0 15231.0 17534.0  19546.9   23671   315.61
+                                             errors: {'Non HTTP response code: java.net.SocketE': 4833, 'Non HTTP response code: org.apache.http.': 128}
+GET /api/video-results/{id}/status           38989  16.77   6715.1  5921.0 13236.0 15748.6  19138.1   23369   296.81
+                                             errors: {'Non HTTP response code: java.net.SocketE': 6257, 'Non HTTP response code: org.apache.http.': 192, '400': 89}
+TOTAL                                       290869  15.73   6641.2  5796.0 13309.2 16326.0  19759.0   23902  2208.37
+                                             errors: {'Non HTTP response code: java.net.SocketE': 44329, 'Non HTTP response code: org.apache.http.': 1337, '400': 89}
+peak haui-fitness-ai-worker-1         cpu=   26.9%  mem= 17.8% of limit
+peak haui-fitness-backend-1           cpu= 1632.9%  mem= 56.3% of limit
+peak haui-fitness-frontend-1          cpu=    2.8%  mem=  7.1% of limit
+peak haui-fitness-kafka-1             cpu=  218.8%  mem= 93.5% of limit
+peak haui-fitness-minio-1             cpu=   23.6%  mem= 23.8% of limit
+peak haui-fitness-mongodb-1           cpu=  860.8%  mem= 12.2% of limit
+peak haui-fitness-redis-1             cpu=    4.7%  mem=  7.6% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=   37.9%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=   36.1%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-5    cpu=    7.7%  mem=  3.1% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=    0.3%  mem=  3.3% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    3.2%  mem=  0.0% of limit
+peak GPU util=0%  mem=14924MiB
+container events: none

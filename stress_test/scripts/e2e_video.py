@@ -23,7 +23,7 @@ STUDENTS = [
     "annv@sv.haui.edu.vn", "binhtt@sv.haui.edu.vn", "cuonglh@sv.haui.edu.vn",
     "ducpm@sv.haui.edu.vn", "hoaht@sv.haui.edu.vn", "huynq@sv.haui.edu.vn",
 ]
-PASSWORD = "123456"
+PASSWORD = os.environ["HAUI_STUDENT_PASSWORD"]
 
 
 def probe_duration(path: str) -> int:

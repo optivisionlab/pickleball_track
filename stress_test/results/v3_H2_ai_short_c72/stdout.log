@@ -1,0 +1,19 @@
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+Creating summariser <summary>
+Created the tree successfully using ai_direct.jmx
+Starting standalone test @ 2026 Oct 28 14:34:15 UTC (1793198055016)
+Waiting for possible Shutdown/StopTestNow/HeapDump/ThreadDump message on port 4445
+summary +    122 in 00:00:15 =    7.9/s Avg:  2049 Min:    10 Max: 15221 Err:    96 (78.69%) Active: 48 Started: 72 Finished: 24
+summary +     52 in 00:00:30 =    1.7/s Avg: 24365 Min: 16960 Max: 28113 Err:     0 (0.00%) Active: 48 Started: 72 Finished: 24
+summary =    174 in 00:00:45 =    3.8/s Avg:  8718 Min:    10 Max: 28113 Err:    96 (55.17%)
+summary +     56 in 00:00:30 =    1.8/s Avg: 26469 Min: 23245 Max: 28536 Err:     0 (0.00%) Active: 48 Started: 72 Finished: 24
+summary =    230 in 00:01:16 =    3.0/s Avg: 13040 Min:    10 Max: 28536 Err:    96 (41.74%)
+summary +     53 in 00:00:31 =    1.7/s Avg: 26959 Min: 19897 Max: 30272 Err:     0 (0.00%) Active: 6 Started: 72 Finished: 66
+summary =    283 in 00:01:46 =    2.7/s Avg: 15647 Min:    10 Max: 30272 Err:    96 (33.92%)
+summary +      5 in 00:00:02 =    2.5/s Avg: 25786 Min: 23352 Max: 28208 Err:     0 (0.00%) Active: 0 Started: 72 Finished: 72
+summary =    288 in 00:01:48 =    2.7/s Avg: 15823 Min:    10 Max: 30272 Err:    96 (33.33%)
+Tidying up ...    @ 2026 Oct 28 14:36:03 UTC (1793198163287)
+... end of run

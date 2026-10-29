@@ -1,0 +1,6 @@
+1793168155,backend-result-consumer,video-grading-results,0
+1793168155,ai-grading-worker,video-grading-jobs-small,0
+1793168155,ai-grading-worker-large,video-grading-jobs-large,0
+1793168173,backend-result-consumer,video-grading-results,0
+1793168173,ai-grading-worker,video-grading-jobs-small,0
+1793168173,ai-grading-worker-large,video-grading-jobs-large,1

@@ -1,0 +1,20 @@
+label                                            n   err%      avg     p50     p90     p95      p99     max      rps
+GET /tasks/{id}/submissions                   3082    0.0    450.2   453.0   645.0   699.0    802.4     956    25.69
+GET /teacher/course tasks                     3091    0.0    449.2   444.0   679.0   747.0    881.2    1416    25.72
+GET /teacher/gradebook                        3121    0.0    582.9   574.0   810.0   891.0   1133.2    1470    25.91
+GET /teacher/stats                            3103    0.0    372.2   381.0   579.0   635.9    752.0    1029    25.86
+POST /api/auth/login (teacher)                  50    0.0    254.7   221.0   473.0   523.8    562.2     570     4.91
+TOTAL                                        12447    0.0    463.0   461.0   696.0   774.0    937.5    1470   103.26
+peak haui-fitness-ai-worker-1         cpu=    1.1%  mem= 16.1% of limit
+peak haui-fitness-backend-1           cpu=  408.4%  mem= 66.8% of limit
+peak haui-fitness-frontend-1          cpu=    2.2%  mem= 29.1% of limit
+peak haui-fitness-kafka-1             cpu=  156.2%  mem= 86.0% of limit
+peak haui-fitness-minio-1             cpu=   26.3%  mem= 95.7% of limit
+peak haui-fitness-mongodb-1           cpu=  158.6%  mem= 19.9% of limit
+peak haui-fitness-redis-1             cpu=    4.7%  mem=  6.9% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=   14.8%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-2    cpu=    1.0%  mem=  2.3% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=    0.3%  mem=  3.0% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    4.6%  mem=  0.0% of limit
+peak GPU util=0%  mem=9382MiB
+container events: none

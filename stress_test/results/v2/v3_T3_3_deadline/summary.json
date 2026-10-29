@@ -1,0 +1,181 @@
+{
+ "name": "v3_T3_3_deadline",
+ "args": {
+  "name": "v3_T3_3_deadline",
+  "base": "http://127.0.0.1:8000",
+  "duration": 600.0,
+  "ramp": 30.0,
+  "browsers": 300,
+  "teachers": 0,
+  "pollers": 0,
+  "think_min": 3,
+  "think_max": 8,
+  "poll": 3,
+  "submit_every": 6.0,
+  "short_ratio": 0.8,
+  "double_click": 0.2,
+  "burst": false,
+  "login_burst": 0,
+  "login_window": 30,
+  "exam_submits": 0,
+  "submit_window": 300,
+  "real_list": "",
+  "max_wait": 7200,
+  "max_conn": 2000
+ },
+ "wall_s": 922.9,
+ "endpoints": {
+  "GET /auth/me": {
+   "n": 4516,
+   "avg": 26.4,
+   "p50": 22.9,
+   "p95": 52.9,
+   "p99": 79.8,
+   "max": 486.4,
+   "codes": {
+    "200": 4516
+   }
+  },
+  "GET /enrollments/my-courses": {
+   "n": 4410,
+   "avg": 46.2,
+   "p50": 40.5,
+   "p95": 87.9,
+   "p99": 129.9,
+   "max": 634.7,
+   "codes": {
+    "200": 4410
+   }
+  },
+  "GET /notifications": {
+   "n": 4605,
+   "avg": 32.8,
+   "p50": 28.2,
+   "p95": 64.3,
+   "p99": 98.8,
+   "max": 873.0,
+   "codes": {
+    "200": 4605
+   }
+  },
+  "GET /sports": {
+   "n": 4580,
+   "avg": 39.0,
+   "p50": 32.8,
+   "p95": 78.5,
+   "p99": 117.3,
+   "max": 870.9,
+   "codes": {
+    "200": 4580
+   }
+  },
+  "GET /status (own)": {
+   "n": 1346,
+   "avg": 28.1,
+   "p50": 24.1,
+   "p95": 57.2,
+   "p99": 77.3,
+   "max": 146.1,
+   "codes": {
+    "200": 1346
+   }
+  },
+  "GET /student/grades": {
+   "n": 4468,
+   "avg": 50.6,
+   "p50": 44.0,
+   "p95": 98.8,
+   "p99": 148.0,
+   "max": 885.1,
+   "codes": {
+    "200": 4468
+   }
+  },
+  "GET /tasks?course": {
+   "n": 4509,
+   "avg": 87.8,
+   "p50": 83.9,
+   "p95": 139.4,
+   "p99": 181.7,
+   "max": 645.0,
+   "codes": {
+    "200": 4509
+   }
+  },
+  "GET /video-results": {
+   "n": 4705,
+   "avg": 66.0,
+   "p50": 60.9,
+   "p95": 110.5,
+   "p99": 148.5,
+   "max": 661.7,
+   "codes": {
+    "200": 4705
+   }
+  },
+  "POST /confirm-upload": {
+   "n": 122,
+   "avg": 67.4,
+   "p50": 57.9,
+   "p95": 132.4,
+   "p99": 162.5,
+   "max": 229.3,
+   "codes": {
+    "201": 122
+   }
+  },
+  "POST /upload-url": {
+   "n": 122,
+   "avg": 76.5,
+   "p50": 63.6,
+   "p95": 158.9,
+   "p99": 219.8,
+   "max": 276.7,
+   "codes": {
+    "200": 122
+   }
+  },
+  "PUT minio": {
+   "n": 122,
+   "avg": 210.4,
+   "p50": 59.7,
+   "p95": 1067.4,
+   "p99": 1604.5,
+   "max": 1731.0,
+   "codes": {
+    "200": 122
+   }
+  }
+ },
+ "api": {
+  "n": 33383,
+  "rps": 36.2,
+  "system_errors": 0,
+  "system_error_pct": 0.0,
+  "p50": 41.0,
+  "p95": 104.5,
+  "p99": 148.8
+ },
+ "submissions_short": {
+  "total": 105,
+  "ok": 105,
+  "errors": [],
+  "submit_p95_ms": 391.6,
+  "e2e_avg_s": 5.4,
+  "e2e_p50_s": 6.3,
+  "e2e_p95_s": 6.5,
+  "e2e_max_s": 6.911,
+  "last_done_s": 606.21
+ },
+ "submissions_long": {
+  "total": 17,
+  "ok": 17,
+  "errors": [],
+  "submit_p95_ms": 2105.0,
+  "e2e_avg_s": 209.5,
+  "e2e_p50_s": 228.1,
+  "e2e_p95_s": 310.1,
+  "e2e_max_s": 336.909,
+  "last_done_s": 922.83
+ }
+}

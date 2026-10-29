@@ -1,6 +1,0 @@
-ai_score,confirm_ms,e2e_ms,final_status,grading_error,grading_wait_ms,idx,poll_avg_ms,poll_count,put_minio_ms,result_id,start_offset_s,submit_total_ms,upload_url_ms
-10.0,26.7,2088.6,completed,,2024.1,0,11.1,2,18.1,6ae0a89051f26173baa3f568,0.0,64.5,19.7
-10.0,18.3,3108.3,completed,,3031.5,1,9.3,3,36.0,6ae0a89351f26173baa3f56c,2.089,76.8,22.5
-10.0,21.2,3114.5,completed,,3033.2,2,9.8,3,36.2,6ae0a89651f26173baa3f570,5.198,81.3,24.0
-10.0,16.0,3107.3,completed,,3032.5,3,9.8,3,36.3,6ae0a89951f26173baa3f574,8.312,74.8,22.5
-10.0,18.7,2097.4,completed,,2022.7,4,10.1,2,35.8,6ae0a89c51f26173baa3f578,11.42,74.7,20.2

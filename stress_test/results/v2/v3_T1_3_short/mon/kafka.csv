@@ -1,0 +1,3 @@
+1793168062,backend-result-consumer,video-grading-results,0
+1793168062,ai-grading-worker,video-grading-jobs-small,1
+1793168062,ai-grading-worker-large,video-grading-jobs-large,0

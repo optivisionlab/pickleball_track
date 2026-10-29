@@ -1,0 +1,19 @@
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+Creating summariser <summary>
+Created the tree successfully using fe_page.jmx
+Starting standalone test @ 2026 Oct 28 13:57:38 UTC (1793195858589)
+Waiting for possible Shutdown/StopTestNow/HeapDump/ThreadDump message on port 4445
+summary + 529831 in 00:00:21 = 24837.4/s Avg:    38 Min:     0 Max:   639 Err:     0 (0.00%) Active: 3000 Started: 3000 Finished: 0
+summary + 803340 in 00:00:30 = 26782.5/s Avg:    70 Min:     0 Max:   547 Err:     0 (0.00%) Active: 3000 Started: 3000 Finished: 0
+summary = 1333171 in 00:00:51 = 25968.0/s Avg:    57 Min:     0 Max:   639 Err:     0 (0.00%)
+summary + 792341 in 00:00:30 = 26411.4/s Avg:    83 Min:     0 Max:   514 Err:     0 (0.00%) Active: 3000 Started: 3000 Finished: 0
+summary = 2125512 in 00:01:21 = 26130.2/s Avg:    67 Min:     0 Max:   639 Err:     0 (0.00%)
+summary + 804071 in 00:00:30 = 26779.2/s Avg:    78 Min:     0 Max:   401 Err:     0 (0.00%) Active: 3000 Started: 3000 Finished: 0
+summary = 2929583 in 00:01:51 = 26304.7/s Avg:    70 Min:     0 Max:   639 Err:     0 (0.00%)
+summary + 260760 in 00:00:10 = 27038.6/s Avg:    76 Min:     0 Max:   473 Err:     0 (0.00%) Active: 0 Started: 3000 Finished: 3000
+summary = 3190343 in 00:02:01 = 26363.2/s Avg:    70 Min:     0 Max:   639 Err:     0 (0.00%)
+Tidying up ...    @ 2026 Oct 28 13:59:39 UTC (1793195979684)
+... end of run

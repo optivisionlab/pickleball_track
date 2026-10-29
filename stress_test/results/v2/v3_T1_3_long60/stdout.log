@@ -1,0 +1,18 @@
+{"name": "v3_T1_3_long60", "wall_s": 60.6, "api": {"n": 52, "rps": 0.9, "system_errors": 0, "system_error_pct": 0.0, "p50": 13.5, "p95": 35.8, "p99": 77.8}, "submissions_long": {"total": 1, "ok": 1, "errors": [], "submit_p95_ms": 9747.0, "e2e_avg_s": 60.6, "e2e_p50_s": 60.6, "e2e_p95_s": 60.6, "e2e_max_s": 60.566, "last_done_s": 60.64}}
+peak haui-fitness-ai-worker-1           cpu=   55.2%  mem= 16.0%
+peak haui-fitness-backend-1             cpu=   10.0%  mem= 54.4%
+peak haui-fitness-frontend-1            cpu=    3.6%  mem= 29.2%
+peak haui-fitness-kafka-1               cpu=  152.7%  mem= 90.2%
+peak haui-fitness-minio-1               cpu=  107.3%  mem= 88.8%
+peak haui-fitness-mongodb-1             cpu=   40.2%  mem= 21.4%
+peak pickleball-ai-pickleball-ai-1      cpu= 2756.4%  mem=  3.2%
+peak pickleball-ai-pickleball-ai-2      cpu=    0.8%  mem=  2.4%
+peak pickleball-ai-pickleball-ai-3      cpu=    0.8%  mem=  2.8%
+peak pickleball-ai-pickleball-lb-1      cpu=    0.1%  mem=  0.0%
+GPU util max=100% avg=12%  VRAM max=9382MiB  temp max=29C  power max=168W avg=48W
+HOST cpu max=60% avg=48%  RAM max=18.1GB  load1 max=22  disk write max=104MB/2s  net rx max=0MB/2s
+AI busy slots max=1  pending jobs max=1  (ERR samples=0)
+kafka max lag: {'ai-grading-worker-large/video-grading-jobs-large': 1}
+mongo pids max=400
+container events: none
+GPU processes: AI service only

@@ -1,6 +1,11 @@
 # Giữ log kết quả chạy (root .gitignore chặn *.log)
 !*.log
-# Không đẩy video, dashboard HTML tự sinh và log debug JMeter
+# Không đẩy video, dashboard HTML tự sinh, file .jtl thô và danh sách tài khoản thật
 videos/
 html/
 jmeter.log
+*.jtl
+jmeter/accounts.csv
+jmeter/tokens*.csv
+accounts_v2.json
+__pycache__/

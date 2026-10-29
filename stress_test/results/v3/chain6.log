@@ -1,0 +1,294 @@
+[2026-10-28 15:34:37] new account batch 1201-1500
+accounts 300, enrolled OK 300, enroll errors 0 
+[2026-10-28 15:34:43] ===== h2
+[2026-10-28 15:34:43] switch -> H2
+ Container haui-fitness-mongodb-1 Healthy 
+[2026-10-28 15:34:51] AI -> replicas=4 decoder=ffmpeg
+[2026-10-28 15:35:28] AI healthy=4 VRAM=12434 MiB
+  /haui-fitness-backend-1 cpus=16000000000 mem=8589934592 pids=1024
+  /haui-fitness-mongodb-1 cpus=8000000000 mem=8589934592 pids=4096
+  /haui-fitness-frontend-1 cpus=4000000000 mem=536870912 pids=256
+  /haui-fitness-kafka-1 cpus=4000000000 mem=1073741824 pids=1024
+  /haui-fitness-ai-worker-1 cpus=2000000000 mem=536870912 pids=512
+  /haui-fitness-minio-1 cpus=4000000000 mem=2147483648 pids=1024
+[2026-10-28 15:35:28] DONE h2
+Max open files            65536                65536                files     
+[2026-10-28 15:35:28] ===== gd4b
+[2026-10-28 15:35:30] idle
+[2026-10-28 15:35:50] JM v3_H2b_flow_u100
+                                             errors: {'400': 49595}
+TOTAL                                       347349  14.28     30.2    28.0    52.0    59.0     77.0     293  2897.23
+                                             errors: {'400': 49595}
+peak haui-fitness-backend-1           cpu= 1635.6%  mem= 53.2% of limit
+peak haui-fitness-frontend-1          cpu=    2.9%  mem=  7.3% of limit
+peak haui-fitness-mongodb-1           cpu=  837.1%  mem=  4.5% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=    0.3%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=    8.1%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-5    cpu=    0.2%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=    0.3%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    2.8%  mem=  0.0% of limit
+peak GPU util=0%  mem=12434MiB
+container events: none
+[2026-10-28 15:38:10] JM v3_H2b_flow_u500
+                                             errors: {'400': 47027}
+TOTAL                                       330070  14.25    159.3   131.0   295.0   311.0    409.0     722  2747.29
+                                             errors: {'400': 47027}
+peak haui-fitness-backend-1           cpu= 1546.2%  mem= 53.2% of limit
+peak haui-fitness-frontend-1          cpu=    0.0%  mem=  7.2% of limit
+peak haui-fitness-mongodb-1           cpu=  853.6%  mem=  7.8% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=    0.3%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=   19.4%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-5    cpu=    2.0%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=    1.8%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    2.6%  mem=  0.0% of limit
+peak GPU util=0%  mem=12434MiB
+container events: none
+[2026-10-28 15:40:29] JM v3_H2b_flow_u1000
+                                             errors: {'400': 45284}
+TOTAL                                       318684  14.21    330.7   279.0   676.7   847.0   1218.0    3730  2646.06
+                                             errors: {'400': 45284}
+peak haui-fitness-backend-1           cpu= 1623.8%  mem= 53.4% of limit
+peak haui-fitness-frontend-1          cpu=    2.8%  mem=  7.3% of limit
+peak haui-fitness-mongodb-1           cpu=  859.7%  mem= 10.1% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=   16.9%  mem=  1.5% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=    0.2%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-5    cpu=    0.2%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=    0.3%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    2.9%  mem=  0.0% of limit
+peak GPU util=0%  mem=12434MiB
+container events: none
+[2026-10-28 15:42:48] JM v3_H2b_flow_u2000
+                                             errors: {'400': 44666}
+TOTAL                                       315665  14.15    669.1   606.0  1209.0  1398.0   1801.0    3917  2614.22
+                                             errors: {'400': 44666}
+peak haui-fitness-backend-1           cpu= 1449.0%  mem= 53.5% of limit
+peak haui-fitness-frontend-1          cpu=    0.0%  mem=  7.2% of limit
+peak haui-fitness-mongodb-1           cpu=  856.2%  mem= 10.7% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=   35.0%  mem=  1.5% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=    0.2%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-5    cpu=    6.2%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=   36.2%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    3.0%  mem=  0.0% of limit
+peak GPU util=0%  mem=12434MiB
+container events: none
+[2026-10-28 15:45:09] JM v3_H2b_flow_u5000
+                                             errors: {'400': 44070}
+TOTAL                                       315376  13.97   1688.2  1621.0  2809.0  3201.0   3882.0    6014  2587.32
+                                             errors: {'400': 44070}
+peak haui-fitness-backend-1           cpu= 1588.4%  mem= 53.9% of limit
+peak haui-fitness-frontend-1          cpu=    2.8%  mem=  7.2% of limit
+peak haui-fitness-mongodb-1           cpu=  862.3%  mem= 11.2% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=   20.5%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=   39.2%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-5    cpu=   34.9%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=   37.1%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    0.0%  mem=  0.0% of limit
+peak GPU util=0%  mem=12434MiB
+container events: none
+[2026-10-28 15:47:42] JM v3_H2b_flow_u10000
+                                             errors: {'400': 44527}
+TOTAL                                       324583  13.72   3330.8  3374.0  5132.0  5792.0   6905.0    8719  2616.55
+                                             errors: {'400': 44527}
+peak haui-fitness-backend-1           cpu= 1633.9%  mem= 54.2% of limit
+peak haui-fitness-frontend-1          cpu=    3.0%  mem=  7.2% of limit
+peak haui-fitness-mongodb-1           cpu=  861.5%  mem= 11.3% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=    0.3%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=   38.8%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-5    cpu=    5.2%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=    0.3%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    2.6%  mem=  0.0% of limit
+peak GPU util=0%  mem=12434MiB
+container events: none
+[2026-10-28 15:50:16] idle
+[2026-10-28 15:50:36] SCN v3_H2b_T3_2_exam_start
+{"name": "v3_H2b_T3_2_exam_start", "wall_s": 1492.7, "api": {"n": 26985, "rps": 18.1, "system_errors": 0, "system_error_pct": 0.0, "p50": 43.0, "p95": 124.1, "p99": 295.1}, "submissions_short": {"total": 101, "ok": 101, "errors": [], "submit_p95_ms": 759.0, "e2e_avg_s": 7.9, "e2e_p50_s": 6.7, "e2e_p95_s": 10.4, "e2e_max_s": 12.75, "last_done_s": 334.9}, "submissions_long": {"total": 49, "ok": 49, "errors": [], "submit_p95_ms": 5008.4, "e2e_avg_s": 637.7, "e2e_p50_s": 641.1, "e2e_p95_s": 1154.5, "e2e_max_s": 1185.17, "last_done_s": 1492.6}}
+peak haui-fitness-ai-worker-1           cpu=   96.5%  mem= 17.6%
+peak haui-fitness-backend-1             cpu=  251.0%  mem= 53.5%
+peak haui-fitness-frontend-1            cpu=    6.0%  mem=  7.3%
+peak haui-fitness-kafka-1               cpu=  396.0%  mem= 95.0%
+peak haui-fitness-mongodb-1             cpu=  225.8%  mem= 11.7%
+peak pickleball-ai-pickleball-ai-1      cpu= 1849.9%  mem=  4.2%
+peak pickleball-ai-pickleball-ai-3      cpu= 1882.1%  mem=  4.2%
+peak pickleball-ai-pickleball-ai-5      cpu= 2117.4%  mem=  4.4%
+peak pickleball-ai-pickleball-ai-6      cpu= 1846.4%  mem=  4.5%
+peak pickleball-ai-pickleball-lb-1      cpu=    6.5%  mem=  0.0%
+GPU util max=100% avg=21%  VRAM max=14892MiB  temp max=34C  power max=212W avg=63W
+HOST cpu max=94% avg=83%  RAM max=31.6GB  load1 max=84  disk write max=413MB/2s  net rx max=0MB/2s
+AI busy slots max=8  pending jobs max=8  (ERR samples=0)
+kafka max lag: {'ai-grading-worker/video-grading-jobs-small': 6, 'ai-grading-worker-large/video-grading-jobs-large': 41}
+mongo pids max=1635
+container events: none
+GPU processes: AI service only
+[2026-10-28 16:15:40] idle
+[2026-10-28 16:16:00] SCN v3_H2b_T3_4_poll_storm
+{"name": "v3_H2b_T3_4_poll_storm", "wall_s": 300.1, "api": {"n": 80782, "rps": 269.2, "system_errors": 0, "system_error_pct": 0.0, "p50": 14.8, "p95": 8977.2, "p99": 17506.6}, "submissions_short": {"total": 300, "ok": 300, "errors": [], "submit_p95_ms": 23456.9, "e2e_avg_s": 71.2, "e2e_p50_s": 73.6, "e2e_p95_s": 135.4, "e2e_max_s": 147.787, "last_done_s": 191.33}}
+peak haui-fitness-ai-worker-1           cpu=   88.7%  mem= 17.9%
+peak haui-fitness-backend-1             cpu=  326.7%  mem= 53.2%
+peak haui-fitness-frontend-1            cpu=    2.3%  mem=  7.3%
+peak haui-fitness-kafka-1               cpu=  410.7%  mem= 95.5%
+peak haui-fitness-mongodb-1             cpu=  127.8%  mem= 11.7%
+peak pickleball-ai-pickleball-ai-1      cpu= 1238.2%  mem=  3.8%
+peak pickleball-ai-pickleball-ai-3      cpu= 1361.4%  mem=  3.7%
+peak pickleball-ai-pickleball-ai-5      cpu= 1141.5%  mem=  3.9%
+peak pickleball-ai-pickleball-ai-6      cpu= 1292.3%  mem=  4.2%
+peak pickleball-ai-pickleball-lb-1      cpu=    5.6%  mem=  0.0%
+GPU util max=100% avg=22%  VRAM max=14924MiB  temp max=36C  power max=211W avg=64W
+HOST cpu max=77% avg=47%  RAM max=32.0GB  load1 max=45  disk write max=147MB/2s  net rx max=0MB/2s
+AI busy slots max=7  pending jobs max=8  (ERR samples=0)
+kafka max lag: {'ai-grading-worker/video-grading-jobs-small': 171}
+mongo pids max=1636
+container events: none
+GPU processes: AI service only
+[2026-10-28 16:21:10] idle
+[2026-10-28 16:21:30] DONE gd4b
+test result ids: 2982
+matched objects 450 size GB 6.6
+deleted 450 errors 0 
+/dev/mapper/ubuntu--vg-ubuntu--lv  1.1T  978G   63G  95% /
+[2026-10-28 16:21:35] ===== gd5
+[2026-10-28 16:21:35] JM v3_T5_1_flow_u10000
+TOTAL                                       274031    0.0   3405.7  3193.0  6206.0  7188.0   8620.0   11183  2195.74
+peak haui-fitness-backend-1           cpu= 1473.8%  mem= 54.1% of limit
+peak haui-fitness-frontend-1          cpu=    2.5%  mem=  7.2% of limit
+peak haui-fitness-mongodb-1           cpu=  860.8%  mem= 12.1% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=   25.3%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=    0.3%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-5    cpu=    0.3%  mem=  3.1% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=    0.3%  mem=  3.3% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    0.0%  mem=  0.0% of limit
+peak GPU util=0%  mem=14924MiB
+container events: none
+[2026-10-28 16:24:08] JM v3_T5_1_flow_u20000
+                                             errors: {'Non HTTP response code: java.net.SocketE': 6955, 'Non HTTP response code: org.apache.http.': 221}
+                                             errors: {'Non HTTP response code: java.net.SocketE': 6425, 'Non HTTP response code: org.apache.http.': 199}
+                                             errors: {'Non HTTP response code: java.net.SocketE': 7022, 'Non HTTP response code: org.apache.http.': 247}
+                                             errors: {'Non HTTP response code: java.net.SocketE': 7097, 'Non HTTP response code: org.apache.http.': 195}
+                                             errors: {'Non HTTP response code: java.net.SocketE': 5740, 'Non HTTP response code: org.apache.http.': 155}
+                                             errors: {'Non HTTP response code: java.net.SocketE': 4833, 'Non HTTP response code: org.apache.http.': 128}
+                                             errors: {'Non HTTP response code: java.net.SocketE': 6257, 'Non HTTP response code: org.apache.http.': 192, '400': 89}
+TOTAL                                       290869  15.73   6641.2  5796.0 13309.2 16326.0  19759.0   23902  2208.37
+                                             errors: {'Non HTTP response code: java.net.SocketE': 44329, 'Non HTTP response code: org.apache.http.': 1337, '400': 89}
+peak haui-fitness-backend-1           cpu= 1632.9%  mem= 56.3% of limit
+peak haui-fitness-frontend-1          cpu=    2.8%  mem=  7.1% of limit
+peak haui-fitness-mongodb-1           cpu=  860.8%  mem= 12.2% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=   37.9%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=   36.1%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-5    cpu=    7.7%  mem=  3.1% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=    0.3%  mem=  3.3% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    3.2%  mem=  0.0% of limit
+peak GPU util=0%  mem=14924MiB
+container events: none
+[2026-10-28 16:26:43] JM v3_T5_1_flow_u30000
+                                             errors: {'Non HTTP response code: java.net.BindExc': 22468, 'Non HTTP response code: java.net.SocketE': 4831, 'Non HTTP response code: org.apache.http.': 1451}
+                                             errors: {'Non HTTP response code: java.net.BindExc': 21466, 'Non HTTP response code: java.net.SocketE': 4718, 'Non HTTP response code: org.apache.http.': 1420}
+                                             errors: {'Non HTTP response code: java.net.BindExc': 21532, 'Non HTTP response code: java.net.SocketE': 4951, 'Non HTTP response code: org.apache.http.': 1690}
+                                             errors: {'Non HTTP response code: java.net.BindExc': 21874, 'Non HTTP response code: java.net.SocketE': 5472, 'Non HTTP response code: org.apache.http.': 1690}
+                                             errors: {'Non HTTP response code: java.net.BindExc': 20705, 'Non HTTP response code: java.net.SocketE': 4689, 'Non HTTP response code: org.apache.http.': 3296}
+                                             errors: {'Non HTTP response code: java.net.BindExc': 20591, 'Non HTTP response code: java.net.SocketE': 5264, 'Non HTTP response code: org.apache.http.': 3936}
+                                             errors: {'Non HTTP response code: java.net.BindExc': 21295, 'Non HTTP response code: java.net.SocketE': 5542, 'Non HTTP response code: org.apache.http.': 2954, '400': 3967}
+TOTAL                                       417892  49.25   6525.1  4229.0 17740.0 22161.0  28345.0   41315  3008.15
+                                             errors: {'Non HTTP response code: java.net.BindExc': 149931, 'Non HTTP response code: java.net.SocketE': 35467, 'Non HTTP response code: org.apache.http.': 16437, '400': 3967}
+peak haui-fitness-backend-1           cpu= 1629.0%  mem= 58.6% of limit
+peak haui-fitness-frontend-1          cpu=    0.0%  mem=  7.2% of limit
+peak haui-fitness-mongodb-1           cpu=  857.8%  mem= 12.3% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=   37.9%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=   37.5%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-5    cpu=    0.3%  mem=  3.1% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=   35.7%  mem=  3.3% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    2.3%  mem=  0.0% of limit
+peak GPU util=0%  mem=14924MiB
+container events: none
+[2026-10-28 16:29:34] JM v3_T5_2_login_u500
+POST /api/auth/login                         10384   0.33   5669.4  5796.0  7809.7  8382.9   9695.7   13269    82.87
+                                             errors: {'Non HTTP response code: org.apache.http.': 34}
+TOTAL                                        10384   0.33   5669.4  5796.0  7809.7  8382.9   9695.7   13269    82.87
+                                             errors: {'Non HTTP response code: org.apache.http.': 34}
+peak haui-fitness-backend-1           cpu= 1693.4%  mem= 57.5% of limit
+peak haui-fitness-frontend-1          cpu=    2.2%  mem=  7.2% of limit
+peak haui-fitness-mongodb-1           cpu=  115.9%  mem= 12.1% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=   36.2%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=   34.3%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-5    cpu=    0.9%  mem=  3.1% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=    0.8%  mem=  3.3% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    3.2%  mem=  0.0% of limit
+peak GPU util=0%  mem=14924MiB
+container events: none
+[2026-10-28 16:31:50] JM v3_T5_2_login_u1000
+POST /api/auth/login                         10665    0.0  11210.1 11212.0 15897.0 17305.0  23440.2   27800    82.78
+TOTAL                                        10665    0.0  11210.1 11212.0 15897.0 17305.0  23440.2   27800    82.78
+peak haui-fitness-backend-1           cpu= 1683.9%  mem= 55.8% of limit
+peak haui-fitness-frontend-1          cpu=    2.1%  mem=  7.5% of limit
+peak haui-fitness-mongodb-1           cpu=  104.6%  mem= 12.0% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=   31.1%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=   21.0%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-5    cpu=   35.2%  mem=  3.1% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=   16.6%  mem=  3.3% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    0.1%  mem=  0.0% of limit
+peak GPU util=0%  mem=14924MiB
+container events: none
+[2026-10-28 16:34:06] JM v3_T5_2_login_u2000
+POST /api/auth/login                         11166    0.0  22128.3 22501.0 32371.0 34533.5  40749.2   45303    82.33
+TOTAL                                        11166    0.0  22128.3 22501.0 32371.0 34533.5  40749.2   45303    82.33
+peak haui-fitness-backend-1           cpu= 1684.5%  mem= 55.9% of limit
+peak haui-fitness-frontend-1          cpu=    3.6%  mem=  7.2% of limit
+peak haui-fitness-mongodb-1           cpu=  110.6%  mem= 12.1% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=   36.2%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=    1.2%  mem=  2.9% of limit
+peak pickleball-ai-pickleball-ai-5    cpu=   52.7%  mem=  3.1% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=   37.7%  mem=  3.3% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    2.9%  mem=  0.0% of limit
+peak GPU util=0%  mem=14924MiB
+container events: none
+[2026-10-28 16:36:41] idle
+[2026-10-28 16:37:01] SCN v3_T5_3_deep_queue
+{"name": "v3_T5_3_deep_queue", "wall_s": 642.8, "api": {"n": 45212, "rps": 70.3, "system_errors": 3, "system_error_pct": 0.007, "p50": 80.8, "p95": 5739.7, "p99": 12658.9}, "submissions_short": {"total": 1000, "ok": 999, "errors": ["upload-url EXC"], "submit_p95_ms": 21681.3, "e2e_avg_s": 267.3, "e2e_p50_s": 238.8, "e2e_p95_s": 509.0, "e2e_max_s": 545.007, "last_done_s": 642.68}}
+peak haui-fitness-ai-worker-1           cpu=   78.3%  mem= 17.9%
+peak haui-fitness-backend-1             cpu=  322.9%  mem= 55.5%
+peak haui-fitness-frontend-1            cpu=    6.0%  mem=  7.5%
+peak haui-fitness-kafka-1               cpu=  286.0%  mem= 89.6%
+peak haui-fitness-mongodb-1             cpu=  220.7%  mem= 12.3%
+peak pickleball-ai-pickleball-ai-1      cpu= 1450.5%  mem=  3.9%
+peak pickleball-ai-pickleball-ai-3      cpu= 1600.1%  mem=  3.8%
+peak pickleball-ai-pickleball-ai-5      cpu= 1519.6%  mem=  4.0%
+peak pickleball-ai-pickleball-ai-6      cpu= 1292.2%  mem=  4.2%
+peak pickleball-ai-pickleball-lb-1      cpu=    6.8%  mem=  0.0%
+GPU util max=100% avg=18%  VRAM max=14924MiB  temp max=34C  power max=198W avg=63W
+HOST cpu max=75% avg=69%  RAM max=34.1GB  load1 max=49  disk write max=223MB/2s  net rx max=0MB/2s
+AI busy slots max=7  pending jobs max=8  (ERR samples=0)
+kafka max lag: {'backend-result-consumer/video-grading-results': 2, 'ai-grading-worker/video-grading-jobs-small': 777}
+mongo pids max=1598
+container events: none
+GPU processes: AI service only
+[2026-10-28 16:47:49] idle
+[2026-10-28 16:48:09] T5.5 combined max
+[2026-10-28 16:48:09] SCN v3_T5_5_combined
+{"name": "v3_T5_5_combined", "wall_s": 1647.8, "api": {"n": 26749, "rps": 16.2, "system_errors": 82, "system_error_pct": 0.307, "p50": 39.8, "p95": 24304.5, "p99": 31094.2}, "submissions_short": {"total": 105, "ok": 103, "errors": ["confirm EXC", "upload-url EXC"], "submit_p95_ms": 51861.0, "e2e_avg_s": 137.1, "e2e_p50_s": 150.8, "e2e_p95_s": 201.6, "e2e_max_s": 213.894, "last_done_s": 456.26}, "submissions_long": {"total": 45, "ok": 45, "errors": [], "submit_p95_ms": 56200.2, "e2e_avg_s": 846.7, "e2e_p50_s": 844.0, "e2e_p95_s": 1325.7, "e2e_max_s": 1374.763, "last_done_s": 1647.68}}
+peak haui-fitness-ai-worker-1           cpu=   69.2%  mem= 18.0%
+peak haui-fitness-backend-1             cpu= 1346.3%  mem= 56.4%
+peak haui-fitness-frontend-1            cpu=    5.7%  mem=  7.3%
+peak haui-fitness-kafka-1               cpu=  396.9%  mem= 96.3%
+peak haui-fitness-mongodb-1             cpu=  812.3%  mem= 12.5%
+peak pickleball-ai-pickleball-ai-1      cpu= 1922.8%  mem=  6.6%
+peak pickleball-ai-pickleball-ai-3      cpu= 2134.1%  mem=  7.8%
+peak pickleball-ai-pickleball-ai-5      cpu= 2106.6%  mem=  6.8%
+peak pickleball-ai-pickleball-ai-6      cpu= 1727.8%  mem=  6.9%
+peak pickleball-ai-pickleball-lb-1      cpu=    5.0%  mem=  0.0%
+GPU util max=100% avg=16%  VRAM max=15236MiB  temp max=35C  power max=207W avg=62W
+HOST cpu max=99% avg=84%  RAM max=45.7GB  load1 max=188  disk write max=742MB/2s  net rx max=0MB/2s
+AI busy slots max=8  pending jobs max=35  (ERR samples=0)
+kafka max lag: {'backend-result-consumer/video-grading-results': 1, 'ai-grading-worker/video-grading-jobs-small': 52, 'ai-grading-worker-large/video-grading-jobs-large': 42}
+mongo pids max=1666
+container events: none
+GPU processes: AI service only
+TOTAL                                       183027    0.0   7522.9  7485.0 10617.0 11650.0  13585.0   21130   598.28
+container events: none
+POST /api/v1/process                           240    0.0  33013.6 25266.5 71212.4 76541.3  83120.6   84374     0.64
+TOTAL                                          240    0.0  33013.6 25266.5 71212.4 76541.3  83120.6   84374     0.64
+container events: none
+[2026-10-28 17:15:47] idle
+[2026-10-28 17:16:07] DONE gd5
+test result ids: 4129
+matched objects 1147 size GB 9.0
+deleted 1147 errors 0 
+/dev/mapper/ubuntu--vg-ubuntu--lv  1.1T  981G   60G  95% /
+[2026-10-28 17:16:18] CHAIN6 DONE

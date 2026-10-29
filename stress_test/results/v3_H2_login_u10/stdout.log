@@ -1,0 +1,21 @@
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+Creating summariser <summary>
+Created the tree successfully using be_login.jmx
+Starting standalone test @ 2026 Oct 28 14:17:01 UTC (1793197021126)
+Waiting for possible Shutdown/StopTestNow/HeapDump/ThreadDump message on port 4445
+summary +      1 in 00:00:00 =    3.8/s Avg:    83 Min:    83 Max:    83 Err:     0 (0.00%) Active: 1 Started: 1 Finished: 0
+summary +   3909 in 00:00:29 =  137.0/s Avg:    67 Min:    34 Max:   592 Err:     0 (0.00%) Active: 10 Started: 10 Finished: 0
+summary =   3910 in 00:00:29 =  135.7/s Avg:    67 Min:    34 Max:   592 Err:     0 (0.00%)
+summary +   4543 in 00:00:30 =  151.4/s Avg:    65 Min:    36 Max:   167 Err:     0 (0.00%) Active: 10 Started: 10 Finished: 0
+summary =   8453 in 00:00:59 =  143.7/s Avg:    66 Min:    34 Max:   592 Err:     0 (0.00%)
+summary +   4761 in 00:00:30 =  158.7/s Avg:    62 Min:    37 Max:   362 Err:     0 (0.00%) Active: 10 Started: 10 Finished: 0
+summary =  13214 in 00:01:29 =  148.8/s Avg:    65 Min:    34 Max:   592 Err:     0 (0.00%)
+summary +   5276 in 00:00:30 =  175.9/s Avg:    56 Min:    38 Max:   106 Err:     0 (0.00%) Active: 10 Started: 10 Finished: 0
+summary =  18490 in 00:01:59 =  155.6/s Avg:    62 Min:    34 Max:   592 Err:     0 (0.00%)
+summary +    235 in 00:00:01 =  184.0/s Avg:    54 Min:    38 Max:    77 Err:     0 (0.00%) Active: 0 Started: 10 Finished: 10
+summary =  18725 in 00:02:00 =  155.9/s Avg:    62 Min:    34 Max:   592 Err:     0 (0.00%)
+Tidying up ...    @ 2026 Oct 28 14:19:01 UTC (1793197141287)
+... end of run

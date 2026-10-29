@@ -1,0 +1,1 @@
+-Jhost=127.0.0.1 -Jramp=0 -Jduration=3600 -Jobject_key=loadtest/shot2.mov -Jthreads=3 -Jloops=1

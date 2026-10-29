@@ -1,0 +1,332 @@
+[
+ {
+  "role": "SV",
+  "endpoint": "GET /",
+  "n": 200,
+  "min": 2.3,
+  "avg": 2.8,
+  "p50": 2.7,
+  "p95": 3.2,
+  "p99": 3.8,
+  "max": 4.3,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "SV",
+  "endpoint": "GET /health/ready",
+  "n": 200,
+  "min": 2.6,
+  "avg": 2.9,
+  "p50": 2.8,
+  "p95": 3.1,
+  "p99": 4.1,
+  "max": 10.0,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "SV",
+  "endpoint": "GET /auth/me",
+  "n": 200,
+  "min": 4.7,
+  "avg": 5.0,
+  "p50": 4.9,
+  "p95": 5.8,
+  "p99": 6.4,
+  "max": 6.8,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "SV",
+  "endpoint": "GET /enrollments/my-courses",
+  "n": 200,
+  "min": 4.4,
+  "avg": 11.3,
+  "p50": 12.1,
+  "p95": 13.2,
+  "p99": 13.8,
+  "max": 13.9,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "SV",
+  "endpoint": "GET /courses/{id}",
+  "n": 200,
+  "min": 2.8,
+  "avg": 5.0,
+  "p50": 5.3,
+  "p95": 5.9,
+  "p99": 6.8,
+  "max": 7.0,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "SV",
+  "endpoint": "GET /tasks?course_id",
+  "n": 200,
+  "min": 14.8,
+  "avg": 21.7,
+  "p50": 21.8,
+  "p95": 23.1,
+  "p99": 25.7,
+  "max": 26.8,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "SV",
+  "endpoint": "GET /tasks/{id}",
+  "n": 200,
+  "min": 4.0,
+  "avg": 10.3,
+  "p50": 10.6,
+  "p95": 12.0,
+  "p99": 13.5,
+  "max": 17.5,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "SV",
+  "endpoint": "GET /sports",
+  "n": 200,
+  "min": 7.0,
+  "avg": 9.8,
+  "p50": 9.9,
+  "p95": 10.9,
+  "p99": 11.6,
+  "max": 12.1,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "SV",
+  "endpoint": "GET /video-results",
+  "n": 200,
+  "min": 13.3,
+  "avg": 17.8,
+  "p50": 17.4,
+  "p95": 18.9,
+  "p99": 20.7,
+  "max": 94.1,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "SV",
+  "endpoint": "GET /video-results/{id}",
+  "n": 200,
+  "min": 5.9,
+  "avg": 6.5,
+  "p50": 6.4,
+  "p95": 7.1,
+  "p99": 8.8,
+  "max": 15.7,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "SV",
+  "endpoint": "GET /video-results/{id}/status",
+  "n": 200,
+  "min": 2.3,
+  "avg": 5.0,
+  "p50": 5.4,
+  "p95": 5.8,
+  "p99": 6.5,
+  "max": 7.0,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "SV",
+  "endpoint": "GET /video-results/{id}/video-url",
+  "n": 200,
+  "min": 2.5,
+  "avg": 5.4,
+  "p50": 6.0,
+  "p95": 6.7,
+  "p99": 7.5,
+  "max": 7.8,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "SV",
+  "endpoint": "GET /student/courses/{id}/grades",
+  "n": 200,
+  "min": 4.4,
+  "avg": 11.7,
+  "p50": 12.2,
+  "p95": 14.2,
+  "p99": 16.1,
+  "max": 16.5,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "SV",
+  "endpoint": "GET /notifications",
+  "n": 200,
+  "min": 3.2,
+  "avg": 8.4,
+  "p50": 8.5,
+  "p95": 9.2,
+  "p99": 11.1,
+  "max": 16.8,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "GV",
+  "endpoint": "GET /teacher/courses",
+  "n": 200,
+  "min": 6.2,
+  "avg": 6.6,
+  "p50": 6.5,
+  "p95": 7.1,
+  "p99": 8.1,
+  "max": 9.4,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "GV",
+  "endpoint": "GET /teacher/courses/{id}",
+  "n": 200,
+  "min": 7.6,
+  "avg": 10.2,
+  "p50": 10.4,
+  "p95": 11.2,
+  "p99": 12.0,
+  "max": 12.1,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "GV",
+  "endpoint": "GET /teacher/courses/{id}/gradebook",
+  "n": 200,
+  "min": 35.1,
+  "avg": 72.8,
+  "p50": 72.5,
+  "p95": 80.4,
+  "p99": 138.1,
+  "max": 162.1,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "GV",
+  "endpoint": "GET /teacher/courses/{id}/stats",
+  "n": 200,
+  "min": 17.8,
+  "avg": 21.5,
+  "p50": 21.2,
+  "p95": 22.3,
+  "p99": 23.7,
+  "max": 88.6,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "GV",
+  "endpoint": "GET /teacher/courses/{id}/tasks",
+  "n": 200,
+  "min": 12.4,
+  "avg": 20.5,
+  "p50": 20.5,
+  "p95": 22.4,
+  "p99": 23.2,
+  "max": 24.2,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "GV",
+  "endpoint": "GET /tasks/{id}/submissions",
+  "n": 200,
+  "min": 37.7,
+  "avg": 69.1,
+  "p50": 70.2,
+  "p95": 74.8,
+  "p99": 76.5,
+  "max": 112.8,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "GV",
+  "endpoint": "GET /enrollments?course_id",
+  "n": 200,
+  "min": 20.9,
+  "avg": 53.0,
+  "p50": 53.5,
+  "p95": 56.5,
+  "p99": 65.0,
+  "max": 118.5,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "AD",
+  "endpoint": "GET /users",
+  "n": 200,
+  "min": 20.1,
+  "avg": 31.0,
+  "p50": 30.8,
+  "p95": 34.4,
+  "p99": 41.8,
+  "max": 55.7,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "AD",
+  "endpoint": "GET /courses",
+  "n": 200,
+  "min": 8.6,
+  "avg": 11.1,
+  "p50": 11.1,
+  "p95": 11.9,
+  "p99": 12.3,
+  "max": 13.1,
+  "codes": {
+   "200": 200
+  }
+ },
+ {
+  "role": "SV",
+  "endpoint": "POST /auth/login",
+  "n": 50,
+  "min": 36.4,
+  "avg": 52.8,
+  "p95": 67.1
+ }
+]

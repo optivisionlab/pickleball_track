@@ -1,0 +1,25 @@
+label                                            n   err%      avg     p50     p90     p95      p99     max      rps
+GET /api/auth/me                             49669    0.0     20.2    19.0    34.0    39.0     52.0     242   414.35
+GET /api/enrollments/my-courses              49660    0.0     34.1    33.0    51.0    58.0     72.0     276   414.46
+GET /api/notifications                       49584    0.0     25.8    24.0    41.0    47.0     59.0     246   414.96
+GET /api/sports                              49590    0.0     27.4    26.0    42.0    47.0     60.0     256   415.01
+GET /api/tasks                               49639    0.0     48.8    47.0    67.0    74.0     92.0     293    414.5
+GET /api/video-results                       49612    0.0     38.5    37.0    57.0    63.0     81.0     273   414.82
+GET /api/video-results/{id}/status           49595  100.0     16.3    15.0    27.0    32.0     43.0     254   414.97
+                                             errors: {'400': 49595}
+TOTAL                                       347349  14.28     30.2    28.0    52.0    59.0     77.0     293  2897.23
+                                             errors: {'400': 49595}
+peak haui-fitness-ai-worker-1         cpu=   28.5%  mem= 16.1% of limit
+peak haui-fitness-backend-1           cpu= 1635.6%  mem= 53.2% of limit
+peak haui-fitness-frontend-1          cpu=    2.9%  mem=  7.3% of limit
+peak haui-fitness-kafka-1             cpu=  394.9%  mem= 94.5% of limit
+peak haui-fitness-minio-1             cpu=  210.0%  mem= 24.0% of limit
+peak haui-fitness-mongodb-1           cpu=  837.1%  mem=  4.5% of limit
+peak haui-fitness-redis-1             cpu=    4.1%  mem=  8.0% of limit
+peak pickleball-ai-pickleball-ai-1    cpu=    0.3%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-3    cpu=    8.1%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-5    cpu=    0.2%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-ai-6    cpu=    0.3%  mem=  1.4% of limit
+peak pickleball-ai-pickleball-lb-1    cpu=    2.8%  mem=  0.0% of limit
+peak GPU util=0%  mem=12434MiB
+container events: none

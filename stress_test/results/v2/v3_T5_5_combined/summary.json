@@ -1,0 +1,217 @@
+{
+ "name": "v3_T5_5_combined",
+ "args": {
+  "name": "v3_T5_5_combined",
+  "base": "http://127.0.0.1:8000",
+  "duration": 360.0,
+  "ramp": 30.0,
+  "browsers": 200,
+  "teachers": 0,
+  "pollers": 1000,
+  "think_min": 2.0,
+  "think_max": 5.0,
+  "poll": 2.0,
+  "submit_every": 0,
+  "short_ratio": 0.7,
+  "double_click": 0,
+  "burst": true,
+  "login_burst": 200,
+  "login_window": 30.0,
+  "exam_submits": 150,
+  "submit_window": 300.0,
+  "real_list": "",
+  "max_wait": 7200,
+  "max_conn": 2000
+ },
+ "wall_s": 1647.8,
+ "endpoints": {
+  "GET /auth/me": {
+   "n": 845,
+   "avg": 8566.1,
+   "p50": 4343.9,
+   "p95": 25222.5,
+   "p99": 29571.5,
+   "max": 44613.7,
+   "codes": {
+    "200": 841,
+    "EXC:RemoteProtocolError": 4
+   }
+  },
+  "GET /enrollments/my-courses": {
+   "n": 848,
+   "avg": 8692.5,
+   "p50": 3300.4,
+   "p95": 25988.0,
+   "p99": 33792.9,
+   "max": 51138.0,
+   "codes": {
+    "200": 843,
+    "EXC:RemoteProtocolError": 5
+   }
+  },
+  "GET /notifications": {
+   "n": 849,
+   "avg": 7543.7,
+   "p50": 1670.9,
+   "p95": 23976.1,
+   "p99": 30615.4,
+   "max": 48423.9,
+   "codes": {
+    "200": 847,
+    "EXC:RemoteProtocolError": 2
+   }
+  },
+  "GET /sports": {
+   "n": 805,
+   "avg": 7839.5,
+   "p50": 3725.0,
+   "p95": 24874.8,
+   "p99": 32733.8,
+   "max": 45567.0,
+   "codes": {
+    "200": 800,
+    "EXC:RemoteProtocolError": 5
+   }
+  },
+  "GET /status (own)": {
+   "n": 16137,
+   "avg": 855.8,
+   "p50": 25.0,
+   "p95": 318.2,
+   "p99": 23530.1,
+   "max": 59062.6,
+   "codes": {
+    "200": 16122,
+    "EXC:RemoteProtocolError": 15
+   }
+  },
+  "GET /status (poll)": {
+   "n": 4284,
+   "avg": 16773.2,
+   "p50": 18187.3,
+   "p95": 29947.7,
+   "p99": 38209.4,
+   "max": 73784.8,
+   "codes": {
+    "200": 4246,
+    "EXC:RemoteProtocolError": 38
+   }
+  },
+  "GET /student/grades": {
+   "n": 797,
+   "avg": 8221.2,
+   "p50": 1091.1,
+   "p95": 25727.8,
+   "p99": 29808.7,
+   "max": 39547.9,
+   "codes": {
+    "200": 795,
+    "EXC:RemoteProtocolError": 2
+   }
+  },
+  "GET /tasks?course": {
+   "n": 814,
+   "avg": 7915.3,
+   "p50": 3344.2,
+   "p95": 24510.8,
+   "p99": 32449.5,
+   "max": 52155.5,
+   "codes": {
+    "200": 810,
+    "EXC:RemoteProtocolError": 4
+   }
+  },
+  "GET /video-results": {
+   "n": 871,
+   "avg": 8732.6,
+   "p50": 5194.1,
+   "p95": 25897.2,
+   "p99": 31664.7,
+   "max": 39874.4,
+   "codes": {
+    "200": 866,
+    "EXC:RemoteProtocolError": 5
+   }
+  },
+  "POST /auth/login": {
+   "n": 200,
+   "avg": 60.3,
+   "p50": 61.5,
+   "p95": 73.6,
+   "p99": 81.1,
+   "max": 92.6,
+   "codes": {
+    "200": 200
+   }
+  },
+  "POST /confirm-upload": {
+   "n": 149,
+   "avg": 13526.8,
+   "p50": 14816.1,
+   "p95": 22193.7,
+   "p99": 26012.2,
+   "max": 28303.8,
+   "codes": {
+    "201": 148,
+    "EXC:RemoteProtocolError": 1
+   }
+  },
+  "POST /upload-url": {
+   "n": 150,
+   "avg": 14883.0,
+   "p50": 15360.2,
+   "p95": 28303.2,
+   "p99": 33440.0,
+   "max": 34653.6,
+   "codes": {
+    "200": 149,
+    "EXC:RemoteProtocolError": 1
+   }
+  },
+  "PUT minio": {
+   "n": 149,
+   "avg": 4895.1,
+   "p50": 4219.1,
+   "p95": 11538.4,
+   "p99": 15021.7,
+   "max": 19647.1,
+   "codes": {
+    "200": 149
+   }
+  }
+ },
+ "api": {
+  "n": 26749,
+  "rps": 16.2,
+  "system_errors": 82,
+  "system_error_pct": 0.307,
+  "p50": 39.8,
+  "p95": 24304.5,
+  "p99": 31094.2
+ },
+ "submissions_short": {
+  "total": 105,
+  "ok": 103,
+  "errors": [
+   "confirm EXC",
+   "upload-url EXC"
+  ],
+  "submit_p95_ms": 51861.0,
+  "e2e_avg_s": 137.1,
+  "e2e_p50_s": 150.8,
+  "e2e_p95_s": 201.6,
+  "e2e_max_s": 213.894,
+  "last_done_s": 456.26
+ },
+ "submissions_long": {
+  "total": 45,
+  "ok": 45,
+  "errors": [],
+  "submit_p95_ms": 56200.2,
+  "e2e_avg_s": 846.7,
+  "e2e_p50_s": 844.0,
+  "e2e_p95_s": 1325.7,
+  "e2e_max_s": 1374.763,
+  "last_done_s": 1647.68
+ }
+}

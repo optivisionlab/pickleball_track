@@ -1,0 +1,19 @@
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+WARN StatusConsoleListener The use of package scanning to locate plugins is deprecated and will be removed in a future release
+Creating summariser <summary>
+Created the tree successfully using be_login.jmx
+Starting standalone test @ 2026 Oct 28 16:34:07 UTC (1793205247401)
+Waiting for possible Shutdown/StopTestNow/HeapDump/ThreadDump message on port 4445
+summary +   1222 in 00:00:23 =   54.1/s Avg:  7816 Min:   172 Max: 18827 Err:     0 (0.00%) Active: 2000 Started: 2000 Finished: 0
+summary +   2324 in 00:00:30 =   77.5/s Avg: 25385 Min: 12317 Max: 42463 Err:     0 (0.00%) Active: 2000 Started: 2000 Finished: 0
+summary =   3546 in 00:00:53 =   67.4/s Avg: 19330 Min:   172 Max: 42463 Err:     0 (0.00%)
+summary +   2537 in 00:00:30 =   84.6/s Avg: 23951 Min: 10195 Max: 45303 Err:     0 (0.00%) Active: 2000 Started: 2000 Finished: 0
+summary =   6083 in 00:01:23 =   73.7/s Avg: 21258 Min:   172 Max: 45303 Err:     0 (0.00%)
+summary +   2430 in 00:00:30 =   81.0/s Avg: 24346 Min:  9834 Max: 41311 Err:     0 (0.00%) Active: 2000 Started: 2000 Finished: 0
+summary =   8513 in 00:01:53 =   75.6/s Avg: 22139 Min:   172 Max: 45303 Err:     0 (0.00%)
+summary +   2653 in 00:00:23 =  113.3/s Avg: 22092 Min: 10326 Max: 45207 Err:     0 (0.00%) Active: 0 Started: 2000 Finished: 2000
+summary =  11166 in 00:02:16 =   82.1/s Avg: 22128 Min:   172 Max: 45303 Err:     0 (0.00%)
+Tidying up ...    @ 2026 Oct 28 16:36:23 UTC (1793205383462)
+... end of run
