@@ -1,6 +1,6 @@
 # GPU deployment of the scoring API: docker compose up -d --build
 #
-# AI_REPLICAS (default 3) instances of the model server share the GPU (each loads the models
+# AI_REPLICAS (default 4) instances of the model server share the GPU (each loads the models
 # once, ~3 GB VRAM) behind an nginx load balancer on port 8888:
 # - least_conn: every job in progress holds one connection, so the instance with
 #   the fewest connections is the least loaded one;
@@ -26,7 +26,7 @@ services:
       PICKLEBALL_SHORT_VIDEO_SECONDS: ${PICKLEBALL_SHORT_VIDEO_SECONDS:-20}
       PICKLEBALL_MAX_PENDING_JOBS: ${PICKLEBALL_MAX_PENDING_JOBS:-12}
       PICKLEBALL_MAX_CONCURRENT_DOWNLOADS: ${PICKLEBALL_MAX_CONCURRENT_DOWNLOADS:-4}
-      PICKLEBALL_DECODER: ${PICKLEBALL_DECODER:-opencv}
+      PICKLEBALL_DECODER: ${PICKLEBALL_DECODER:-ffmpeg}
     volumes:
       # best.pt, BEATs and videomae-base. Read-only once videomae-base/model.safetensors
       # exists; drop ":ro" (and make the directory writable by uid 10001) to let
@@ -36,7 +36,7 @@ services:
     # inference slot for 1080p video).
     shm_size: 2gb
     deploy:
-      replicas: ${AI_REPLICAS:-3}
+      replicas: ${AI_REPLICAS:-4}
       resources:
         reservations:
           devices:
