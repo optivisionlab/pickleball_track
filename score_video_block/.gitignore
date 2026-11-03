@@ -221,3 +221,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Pauses deploy/watchdog.sh during planned maintenance
+deploy/.watchdog-pause

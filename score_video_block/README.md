@@ -207,6 +207,15 @@ replica with the fewest open connections (a job holds its connection until score
 and skips a replica that answers `429`. Scale with
 `AI_REPLICAS=3 docker compose up -d` (each replica loads the models once, ~3 GB of
 VRAM). The weights directory is `PICKLEBALL_WEIGHTS_DIR` (default `./src/weights`).
+
+`restart: unless-stopped` does not restart a container someone stopped by hand, so
+`deploy/watchdog.sh` runs every minute from cron and calls `docker compose up -d` when
+fewer than `AI_REPLICAS` model servers or no load balancer are running:
+
+```bash
+( crontab -l; echo "* * * * * $PWD/deploy/watchdog.sh >> \$HOME/pickleball-ai-watchdog.log 2>&1" ) | crontab -
+touch deploy/.watchdog-pause   # planned maintenance: pause it; rm the file to resume
+```
 It also sets `--gpus`, `shm_size: 2gb` (preprocessing workers) and `env_file: .env`. The image keeps the repository layout
 under `/app` (`PYTHONPATH=/app/src`), so relative paths in `.env` work unchanged.
 CPU-only image: `docker build --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cpu -t pickleball-track .`
