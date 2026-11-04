@@ -66,10 +66,10 @@ ENV PATH="/opt/venv/bin:$PATH" \
     HF_HOME=/tmp/huggingface \
     NVIDIA_VISIBLE_DEVICES=all \
     NVIDIA_DRIVER_CAPABILITIES=compute,utility \
-    PICKLEBALL_CHECKPOINT=/app/src/weights/best.pt \
+    PICKLEBALL_CHECKPOINT=/app/src/weights/pickleball_v4.pt \
     PICKLEBALL_BEATS_CHECKPOINT=/app/src/weights/BEATs_iter3_plus_AS2M.pt \
     PICKLEBALL_BEATS_ROOT=/app/vendor/unilm \
-    PICKLEBALL_VIDEOMAE=/app/src/weights/videomae-base
+    PICKLEBALL_VIDEOMAE=/app/src/weights/videomae-base-finetuned-kinetics
 
 USER 10001:10001
 

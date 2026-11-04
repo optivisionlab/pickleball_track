@@ -26,10 +26,11 @@ services:
       PICKLEBALL_SHORT_VIDEO_SECONDS: ${PICKLEBALL_SHORT_VIDEO_SECONDS:-20}
       PICKLEBALL_MAX_PENDING_JOBS: ${PICKLEBALL_MAX_PENDING_JOBS:-12}
       PICKLEBALL_MAX_CONCURRENT_DOWNLOADS: ${PICKLEBALL_MAX_CONCURRENT_DOWNLOADS:-4}
-      PICKLEBALL_DECODER: ${PICKLEBALL_DECODER:-ffmpeg}
+      # OpenCV decodes like training; ffmpeg is faster on HEVC but darkens iPhone HDR frames.
+      PICKLEBALL_DECODER: ${PICKLEBALL_DECODER:-opencv}
     volumes:
-      # best.pt, BEATs and videomae-base. Read-only once videomae-base/model.safetensors
-      # exists; drop ":ro" (and make the directory writable by uid 10001) to let
+      # pickleball_v4.pt, BEATs and videomae-base-finetuned-kinetics. Read-only once its
+      # model.safetensors exists; drop ":ro" (and make the directory writable by uid 10001) to let
       # the service download it on first start.
       - ${PICKLEBALL_WEIGHTS_DIR:-./src/weights}:/app/src/weights:ro
     # Frame preprocessing workers exchange frames through /dev/shm (~210 MB per

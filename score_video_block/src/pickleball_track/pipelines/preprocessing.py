@@ -1,6 +1,6 @@
-"""Video metadata, audio decoding and sliding-window preparation matching training.
+"""Video metadata, audio decoding and sliding windows, matching training.
 
-Frame decoding and VideoMAE preprocessing live in ``frames.py``.
+Frame decoding, sampling and preprocessing live in ``frames.py``.
 """
 
 from __future__ import annotations
@@ -13,8 +13,7 @@ import cv2
 import numpy as np
 import torch
 
-from ..core.config import AUDIO_SR, OVERLAP
-from .resample import resample
+from ..core.config import AUDIO_SR, NUM_VIDEO_FRAMES, TARGET_FPS, WINDOW_STRIDE
 
 
 @dataclass(frozen=True)
@@ -45,83 +44,40 @@ def get_video_info(video_path: str | Path) -> VideoInfo:
     return VideoInfo(fps=fps, num_frames=num_frames, width=width, height=height)
 
 
-def build_windows(num_frames: int, num_window_frames: int, overlap: float = OVERLAP) -> list[int]:
-    """Start frames of overlapping windows; the last window ends at the last frame."""
-    stride = max(1, int(round(num_window_frames * (1.0 - overlap))))
-    if num_frames <= num_window_frames:
-        return [0]
+def num_sampled_frames(info: VideoInfo) -> int:
+    """Frames sampled at TARGET_FPS over the video's duration (at least one)."""
+    return max(1, int(np.floor(info.duration * TARGET_FPS)))
 
-    last_start = num_frames - num_window_frames
-    starts = list(range(0, last_start + 1, stride))
-    if starts[-1] != last_start:
-        starts.append(last_start)
+
+def window_starts(num_sampled: int) -> list[int]:
+    """Window starts in sampled frames (training's ``window_starts``).
+
+    Starts are even so the tokens of all windows share one grid; the last window
+    ends at the last sampled frame (rounded down to an even start).
+    """
+    if num_sampled <= NUM_VIDEO_FRAMES:
+        return [0]
+    last = (num_sampled - NUM_VIDEO_FRAMES) // 2 * 2
+    starts = list(range(0, last + 1, WINDOW_STRIDE))
+    if starts[-1] != last:
+        starts.append(last)
     return starts
 
 
-def _run(command: list[str]) -> bytes:
+def load_audio(video_path: str | Path) -> torch.Tensor:
+    """Mono float32 waveform at AUDIO_SR, shape (samples,); empty when there is no audio.
+
+    Same command as training (ffmpeg downmixes and resamples). A video without an
+    audio stream is scored from the video alone, as training does.
+    """
+    command = [
+        "ffmpeg", "-nostdin", "-v", "error", "-i", str(video_path), "-vn", "-ac", "1",
+        "-ar", str(AUDIO_SR), "-f", "f32le", "-",
+    ]
     try:
-        return subprocess.run(command, check=True, capture_output=True).stdout
+        raw = subprocess.run(command, capture_output=True, check=True, timeout=600).stdout
     except FileNotFoundError as exc:
         raise RuntimeError("FFmpeg is required to decode audio from video") from exc
-    except subprocess.CalledProcessError as exc:
-        message = exc.stderr.decode("utf-8", errors="replace").strip()
-        raise RuntimeError(f"Could not decode video audio: {message}") from exc
-
-
-def decode_audio(video_path: str | Path) -> tuple[torch.Tensor, int]:
-    """Decode the first audio stream at its native rate: float32 (channels, samples), sr."""
-    probe = _run([
-        "ffprobe", "-v", "error", "-select_streams", "a:0",
-        "-show_entries", "stream=sample_rate,channels", "-of", "csv=p=0", str(video_path),
-    ]).decode().strip()
-    if not probe:
-        raise RuntimeError("Video contains no decodable audio stream")
-    sample_rate, channels = (int(value) for value in probe.split(",")[:2])
-
-    raw = _run([
-        "ffmpeg", "-nostdin", "-v", "error", "-i", str(video_path), "-map", "0:a:0",
-        "-f", "f32le", "-acodec", "pcm_f32le", "pipe:1",
-    ])
-    samples = np.frombuffer(raw, dtype="<f4").copy()
-    if samples.size == 0 or samples.size % channels:
-        raise RuntimeError("Video contains no decodable audio stream")
-    # Interleaved PCM -> channels first, like torchaudio.load.
-    return torch.from_numpy(samples).reshape(-1, channels).T.contiguous(), sample_rate
-
-
-def load_audio(video_path: str | Path) -> torch.Tensor:
-    """Mono float32 waveform at AUDIO_SR, shape (1, samples).
-
-    Same steps as the original torchaudio pipeline: decode, average channels,
-    then torchaudio's sinc resampling (see ``resample.py``).
-    """
-    waveform, sr = decode_audio(video_path)
-    # Stereo -> mono
-    if waveform.shape[0] > 1:
-        waveform = waveform.mean(dim=0, keepdim=True)
-    waveform = waveform.float()
-    if sr != AUDIO_SR:
-        waveform = resample(waveform, sr, AUDIO_SR)
-    return waveform.contiguous()
-
-
-def get_audio_window(
-    waveform: torch.Tensor,
-    start_time: float,
-    duration: float,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Slice and zero-pad a window; padding mask is True for padded samples."""
-    start_sample = max(0, int(round(start_time * AUDIO_SR)))
-    num_samples = max(1, int(round(duration * AUDIO_SR)))
-    end_sample = min(waveform.shape[-1], start_sample + num_samples)
-    segment = waveform[:, start_sample:end_sample]
-    valid_samples = segment.shape[-1]
-
-    if valid_samples < num_samples:
-        padded = torch.zeros(1, num_samples, dtype=torch.float32)
-        padded[:, :valid_samples] = segment
-        segment = padded
-
-    padding_mask = torch.ones(1, num_samples, dtype=torch.bool)
-    padding_mask[:, :valid_samples] = False
-    return segment, padding_mask
+    except (subprocess.SubprocessError, OSError):
+        return torch.zeros(0, dtype=torch.float32)
+    return torch.from_numpy(np.frombuffer(raw, dtype=np.float32).copy())

@@ -17,7 +17,7 @@ def test_slots_run_videos_concurrently_with_identical_results(tiny_models, clip_
 
 
 def test_each_slot_gets_its_own_preprocessing_pool(tiny_models, clip_path):
-    pool = ProcessFramePool(tiny_models.processor, workers=1)
+    pool = ProcessFramePool(tiny_models.frame_spec, workers=1)
     models = replace(tiny_models, frame_pool=pool)
     service = VideoInferenceService(models, slots=2)
     try:

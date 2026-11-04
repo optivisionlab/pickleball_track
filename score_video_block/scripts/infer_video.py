@@ -19,18 +19,25 @@ from pickleball_track.services.inference_service import VideoInferenceService
 def parse_args(defaults: InferenceParams) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Pickleball single-video inference using pretrained VideoMAE + BEATs "
-            "and trained temporal fusion model."
+            "Pickleball single-video inference: pretrained VideoMAE + BEATs features "
+            "and the trained v4 fold ensemble."
         )
     )
     parser.add_argument("--video", required=True, help="Path to a completely new video.")
     parser.add_argument("--checkpoint", default=None, help="Trained checkpoint. Default: PICKLEBALL_CHECKPOINT.")
     # Defaults come from core/config.py (or PICKLEBALL_* environment variables).
-    parser.add_argument("--miss-threshold", type=float, default=defaults.miss_threshold, help="Miss probability threshold.")
-    parser.add_argument("--hit-threshold", type=float, default=defaults.hit_threshold, help="Hit probability threshold.")
-    parser.add_argument("--event-gap", type=float, default=defaults.event_min_gap, help="Maximum gap for merging the same action event.")
-    parser.add_argument("--smooth-radius", type=int, default=defaults.smooth_radius, help="Probability smoothing radius; 0 disables smoothing.")
-    parser.add_argument("--overlap", type=float, default=defaults.overlap, help="Sliding-window overlap in [0, 1).")
+    parser.add_argument(
+        "--event-threshold", type=float, default=defaults.event_threshold,
+        help="P(event) threshold for a token (config default 0.4); pass --argmax for the training decoder.",
+    )
+    parser.add_argument("--argmax", dest="event_threshold", action="store_const", const=None,
+                        help="A token is an event when its argmax is hit/miss (training decoder).")
+    parser.add_argument("--min-event-tokens", type=int, default=defaults.min_event_tokens,
+                        help="Shortest run of event tokens kept as an event (1 token = 1/15 s).")
+    parser.add_argument("--smooth-tokens", type=int, default=defaults.smooth_tokens,
+                        help="Moving average of P(event) in tokens; 1 disables it.")
+    parser.add_argument("--peak", action="store_true", default=defaults.peak,
+                        help="Place an event at its most confident token instead of its run centre.")
     parser.add_argument("--output", default=None, help="Output JSON path. Default: <video>.inference.json")
     return parser.parse_args()
 
@@ -46,11 +53,10 @@ def main() -> None:
     service = VideoInferenceService(
         models,
         InferenceParams(
-            hit_threshold=args.hit_threshold,
-            miss_threshold=args.miss_threshold,
-            event_min_gap=args.event_gap,
-            smooth_radius=args.smooth_radius,
-            overlap=args.overlap,
+            event_threshold=args.event_threshold,
+            min_event_tokens=args.min_event_tokens,
+            smooth_tokens=args.smooth_tokens,
+            peak=args.peak,
         ),
     )
     video_path = Path(args.video)

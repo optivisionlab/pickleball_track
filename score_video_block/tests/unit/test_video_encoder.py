@@ -8,22 +8,22 @@ from pickleball_track.models.components.video_encoder import (
     adapt_videomae_to_frame_count,
 )
 
-from ..helpers import TINY_VIDEO_DIM, build_tiny_videomae
+from ..helpers import TINY_HIDDEN, TINY_VIDEO_DIM, build_tiny_videomae
 
 
 def test_position_embeddings_are_interpolated_to_trained_frame_count():
     torch.manual_seed(0)
     model = VideoMAEModel(VideoMAEConfig(
         image_size=32, patch_size=16, num_frames=16, tubelet_size=2,
-        hidden_size=TINY_VIDEO_DIM, num_hidden_layers=1, num_attention_heads=2, intermediate_size=64,
+        hidden_size=TINY_HIDDEN, num_hidden_layers=1, num_attention_heads=2, intermediate_size=64,
     ))
     before = model.embeddings.position_embeddings.clone()
 
     adapt_videomae_to_frame_count(model)
 
     after = model.embeddings.position_embeddings
-    assert before.shape == (1, 8 * 4, TINY_VIDEO_DIM)
-    assert after.shape == (1, 16 * 4, TINY_VIDEO_DIM)
+    assert before.shape == (1, 8 * 4, TINY_HIDDEN)
+    assert after.shape == (1, 16 * 4, TINY_HIDDEN)
     assert model.config.num_frames == NUM_VIDEO_FRAMES
     assert not after.requires_grad
 
@@ -31,7 +31,7 @@ def test_position_embeddings_are_interpolated_to_trained_frame_count():
 def test_incompatible_tubelet_size_is_rejected():
     model = VideoMAEModel(VideoMAEConfig(
         image_size=32, patch_size=16, num_frames=15, tubelet_size=3,
-        hidden_size=TINY_VIDEO_DIM, num_hidden_layers=1, num_attention_heads=2, intermediate_size=64,
+        hidden_size=TINY_HIDDEN, num_hidden_layers=1, num_attention_heads=2, intermediate_size=64,
     ))
 
     with pytest.raises(RuntimeError, match="divisible"):
@@ -65,3 +65,18 @@ def test_batched_windows_match_single_window_calls():
         single, single_padding = encoder(pixel_values[i:i + 1], frame_valid[i])
         assert torch.allclose(features[i], single[0], atol=1e-5)
         assert torch.equal(padding[i], single_padding[0])
+
+
+def test_features_are_global_mean_then_2x2_grid_like_training():
+    encoder = VideoEncoder(build_tiny_videomae(), torch.device("cpu"))
+    torch.manual_seed(2)
+    pixel_values = torch.randn(1, NUM_VIDEO_FRAMES, 3, 32, 32)
+
+    features, _ = encoder(pixel_values, torch.ones(NUM_VIDEO_FRAMES, dtype=torch.bool))
+    tokens = encoder.model(pixel_values=pixel_values).last_hidden_state.reshape(1, 16, 2, 2, TINY_HIDDEN)
+
+    parts = features.reshape(1, 16, 5, TINY_HIDDEN)
+    assert encoder.feature_dim == TINY_VIDEO_DIM
+    torch.testing.assert_close(parts[:, :, 0], tokens.mean((2, 3)))
+    # With a 2x2 patch grid every cell is one patch, in row-major order.
+    torch.testing.assert_close(parts[:, :, 1:], tokens.reshape(1, 16, 4, TINY_HIDDEN))

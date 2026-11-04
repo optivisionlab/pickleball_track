@@ -1,15 +1,17 @@
-"""Sequential frame decoding, per-frame VideoMAE preprocessing and window batching.
+"""Sequential frame decoding, time-based frame sampling, preprocessing and window batching.
 
-The video is decoded once, front to back, in a background thread. Each frame is
-preprocessed once (overlapping windows share frames) and windows are stacked into
-batches for the backbone. Seeking with ``CAP_PROP_POS_FRAMES`` is avoided: on
-variable-frame-rate phone videos it lands up to a second away from the requested
-frame.
+The video is decoded once, front to back, in a background thread. As in training,
+only the source frames ``round(i * fps / TARGET_FPS)`` are kept (``frame_counts``
+says how many sampled slots each source frame fills: 0 on a 60 fps video for every
+other frame, 2 for some frames below 30 fps). Each kept frame is preprocessed once
+(overlapping windows share frames) and windows are stacked into batches for the
+backbone. Seeking with ``CAP_PROP_POS_FRAMES`` is avoided: on variable-frame-rate
+phone videos it lands up to a second away from the requested frame.
 
 Preprocessing runs either on a thread pool (``preprocessed_chunks``) or, faster,
 on worker processes that read decoded frames from shared memory
 (``ProcessFramePool``); the GIL otherwise caps the thread pool at ~150 frames/s.
-Both produce pixel values identical to ``VideoMAEImageProcessor``.
+Both produce pixel values identical to the training preprocessing.
 """
 
 from __future__ import annotations
@@ -25,7 +27,7 @@ import threading
 from collections import deque
 from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from multiprocessing import shared_memory
 from multiprocessing.connection import Connection, wait
 from pathlib import Path
@@ -35,14 +37,11 @@ import cv2
 import numpy as np
 import torch
 import torch.nn.functional as F
-from transformers import VideoMAEImageProcessor
 
-from .frame_workers import END, ERROR, ResizeSpec, resize_and_crop, to_pixels, worker_main
+from ..core.config import IMAGE_SIZE, IMAGENET_MEAN, IMAGENET_STD, TARGET_FPS
+from .frame_workers import END, ERROR, ResizeSpec, resize_frame, to_pixels, worker_main
 
 logger = logging.getLogger(__name__)
-
-# PIL resample codes used by Hugging Face image processors.
-_TORCH_RESAMPLE = {2: "bilinear", 3: "bicubic"}
 
 
 class FramePreprocessor(Protocol):
@@ -51,54 +50,23 @@ class FramePreprocessor(Protocol):
         ...
 
 
-def _resize_shape(processor: VideoMAEImageProcessor, height: int, width: int) -> tuple[int, int]:
-    """Output (height, width); mirrors transformers' get_resize_output_image_size."""
-    size = processor.size
-    if "shortest_edge" not in size:
-        return int(size["height"]), int(size["width"])
-    short_target = int(size["shortest_edge"])
-    short, long = (width, height) if width <= height else (height, width)
-    new_short, new_long = short_target, int(short_target * long / short)
-    return (new_long, new_short) if width <= height else (new_short, new_long)
+@dataclass(frozen=True)
+class FrameSpec:
+    """The training frame preprocessing: square resize + ImageNet normalization."""
 
+    size: int = IMAGE_SIZE
+    mean: tuple[float, float, float] = IMAGENET_MEAN
+    std: tuple[float, float, float] = IMAGENET_STD
 
-def _center_crop_box(processor: VideoMAEImageProcessor, height: int, width: int) -> tuple[int, int, int, int]:
-    crop_h, crop_w = int(processor.crop_size["height"]), int(processor.crop_size["width"])
-    if crop_h > height or crop_w > width:
-        raise ValueError(f"Frame {height}x{width} is smaller than the {crop_h}x{crop_w} crop")
-    top, left = (height - crop_h) // 2, (width - crop_w) // 2
-    return top, left, crop_h, crop_w
+    def lut(self) -> np.ndarray:
+        """(3, 256) float32: ``(v / 255 - mean) / std`` for every uint8 value, in float32 like training."""
+        values = np.arange(256, dtype=np.float32)[None] / np.float32(255.0)
+        mean = np.asarray(self.mean, dtype=np.float32)[:, None]
+        std = np.asarray(self.std, dtype=np.float32)[:, None]
+        return np.ascontiguousarray((values - mean) / std, dtype=np.float32)
 
-
-def pixel_lut(processor: VideoMAEImageProcessor) -> np.ndarray:
-    """(3, 256) float32: the processor's rescale + normalize applied to every uint8 value.
-
-    Uses the processor's own operations (float64 rescale, float32 cast, float32
-    normalize); they are element-wise, so looking values up is bit-identical.
-    """
-    values = np.repeat(np.arange(256, dtype=np.uint8)[:, None], 3, axis=1)  # (256, 3) "pixels"
-    if processor.do_rescale:
-        values = (values.astype(np.float64) * processor.rescale_factor).astype(np.float32)
-    else:
-        values = values.astype(np.float32)
-    if processor.do_normalize:
-        mean = np.asarray(processor.image_mean, dtype=np.float32)
-        std = np.asarray(processor.image_std, dtype=np.float32)
-        values = (values - mean) / std
-    return np.ascontiguousarray(values.T, dtype=np.float32)
-
-
-def resize_spec(processor: VideoMAEImageProcessor, height: int, width: int, rotate: int = 0) -> ResizeSpec:
-    """The processor's resize + center crop for (height, width) frames shown rotated by ``rotate``."""
-    if rotate in (90, 270):
-        height, width = width, height
-    resize = _resize_shape(processor, height, width) if processor.do_resize else None
-    crop = None
-    if processor.do_center_crop:
-        crop = _center_crop_box(processor, *(resize or (height, width)))
-    return ResizeSpec(
-        resize=resize, resample=int(processor.resample), crop=crop, lut=pixel_lut(processor), rotate=rotate
-    )
+    def resize_spec(self, rotate: int = 0) -> ResizeSpec:
+        return ResizeSpec(size=(self.size, self.size), lut=self.lut(), rotate=rotate)
 
 
 def _defer_rotation(capture: cv2.VideoCapture) -> int:
@@ -118,71 +86,66 @@ def _defer_rotation(capture: cv2.VideoCapture) -> int:
     return rotate
 
 
-class ProcessorFrames:
-    """``VideoMAEImageProcessor`` preprocessing on the CPU, bit-identical to calling it.
+class CpuFrames:
+    """Training preprocessing on the CPU (cv2 INTER_AREA resize + LUT normalization)."""
 
-    Re-implements the processor's steps (PIL resize of the uint8 image, center
-    crop, float64 rescale cast to float32, float32 normalize) without its
-    per-image Python overhead. Equality with the processor is tested.
-    """
-
-    def __init__(self, processor: VideoMAEImageProcessor):
-        self.processor = processor
-        self._specs: dict[tuple[int, int], ResizeSpec] = {}
+    def __init__(self, spec: FrameSpec):
+        self.resize = spec.resize_spec()
 
     def __call__(self, frames: Sequence[np.ndarray]) -> torch.Tensor:
-        resized = []
-        for frame in frames:
-            shape = frame.shape[:2]
-            if shape not in self._specs:
-                self._specs[shape] = resize_spec(self.processor, *shape)
-            resized.append(resize_and_crop(frame, self._specs[shape]))
-        lut = next(iter(self._specs.values())).lut
-        return torch.from_numpy(to_pixels(np.stack(resized), lut))
+        resized = np.stack([resize_frame(frame, self.resize) for frame in frames])
+        return torch.from_numpy(to_pixels(resized, self.resize.lut))
 
 
 class TorchFrames:
-    """The processor's resize / center crop / rescale / normalize as batched torch ops.
+    """The training preprocessing as batched torch ops on the GPU.
 
-    Antialiased bilinear resizing reproduces PIL to within one 8-bit level, so
-    features match the CPU path closely while running on the GPU.
+    Area interpolation matches cv2 INTER_AREA exactly for integer downscale factors
+    and closely otherwise, so features stay close to the CPU path.
     """
 
-    def __init__(self, processor: VideoMAEImageProcessor, device: torch.device, chunk: int = 8):
-        if processor.do_resize and processor.resample not in _TORCH_RESAMPLE:
-            raise ValueError(f"Unsupported resample mode for GPU preprocessing: {processor.resample}")
-        self.processor = processor
+    def __init__(self, spec: FrameSpec, device: torch.device, chunk: int = 8):
+        self.spec = spec
         self.device = device
         self.chunk = chunk
-        self.mean = torch.tensor(processor.image_mean, device=device).view(1, 3, 1, 1)
-        self.std = torch.tensor(processor.image_std, device=device).view(1, 3, 1, 1)
+        self.mean = torch.tensor(spec.mean, device=device).view(1, 3, 1, 1)
+        self.std = torch.tensor(spec.std, device=device).view(1, 3, 1, 1)
 
     def _process(self, frames: Sequence[np.ndarray]) -> torch.Tensor:
-        p = self.processor
         x = torch.from_numpy(np.stack(frames)).to(self.device, non_blocking=True)
         # BGR -> RGB, (N, H, W, C) uint8 -> (N, C, H, W) float.
         x = x.flip(-1).permute(0, 3, 1, 2).float()
-        if p.do_resize:
-            x = F.interpolate(
-                x, size=_resize_shape(p, x.shape[-2], x.shape[-1]),
-                mode=_TORCH_RESAMPLE[p.resample], antialias=True, align_corners=False,
-            )
-            # PIL returns uint8 images.
-            x = x.round_().clamp_(0, 255)
-        if p.do_center_crop:
-            top, left, crop_h, crop_w = _center_crop_box(p, x.shape[-2], x.shape[-1])
-            x = x[:, :, top:top + crop_h, left:left + crop_w]
-        if p.do_rescale:
-            x = x * p.rescale_factor
-        if p.do_normalize:
-            x = (x - self.mean) / self.std
-        return x.contiguous()
+        x = F.interpolate(x, size=(self.spec.size, self.spec.size), mode="area")
+        # cv2 returns uint8 images.
+        x = x.round_().clamp_(0, 255)
+        return ((x / 255.0 - self.mean) / self.std).contiguous()
 
     def __call__(self, frames: Sequence[np.ndarray]) -> torch.Tensor:
         # Full-resolution float frames are large; convert a few at a time.
         return torch.cat(
             [self._process(frames[i:i + self.chunk]) for i in range(0, len(frames), self.chunk)]
         )
+
+
+def frame_counts(num_frames: int, fps: float, target_fps: float = TARGET_FPS) -> np.ndarray:
+    """Sampled slots filled by each source frame (training's ``decode_sampled``).
+
+    Slot ``i`` of the ``floor(duration * target_fps)`` sampled frames shows source
+    frame ``min(round(i * fps / target_fps), num_frames - 1)``.
+    """
+    num_frames = max(1, int(num_frames))
+    num_sampled = max(1, int(np.floor(num_frames / fps * target_fps)))
+    targets = np.minimum(np.round(np.arange(num_sampled) * fps / target_fps).astype(np.int64), num_frames - 1)
+    return np.bincount(targets, minlength=num_frames)
+
+
+def sample_frames(frames: Iterator[tuple[np.ndarray, float]], counts: np.ndarray) -> Iterator[np.ndarray]:
+    """Keep the sampled source frames, each repeated as often as it fills a slot."""
+    for index, (frame, _) in enumerate(frames):
+        if index >= len(counts):
+            return  # past the last sampled frame
+        for _ in range(int(counts[index])):
+            yield frame
 
 
 @dataclass(frozen=True)
@@ -336,6 +299,13 @@ class FFmpegCapture:
         self._position = stamp + self._offset if stamp == stamp else self._position
         return True, out
 
+    def grab(self) -> bool:
+        """Decode and drop one frame (a frame that is not sampled)."""
+        if self._process is not None and getattr(self, "_scratch", None) is None:
+            self._scratch = np.empty((self.height, self.width, 3), dtype=np.uint8)
+        ok, _ = self.read(getattr(self, "_scratch", None))
+        return ok
+
     def get(self, prop: int) -> float:
         if prop == cv2.CAP_PROP_POS_MSEC:
             return self._position * 1000.0
@@ -392,49 +362,24 @@ def iter_frames(
         capture.release()
 
 
-@dataclass
-class FrameTimeline:
-    """Frame index -> seconds.
-
-    Uses ``index / fps`` like training whenever the container timestamp agrees with
-    it to within half a frame (always, for constant frame rate video); otherwise the
-    decoded timestamp, so audio stays aligned on variable-frame-rate video.
-    """
-
-    fps: float
-    timestamps: list[float] = field(default_factory=list)
-
-    def time(self, index: float) -> float:
-        nominal = index / self.fps
-        if not self.timestamps:
-            return nominal
-        last = len(self.timestamps) - 1
-        base = min(int(index), last)
-        actual = self.timestamps[base] + (index - base) / self.fps
-        return actual if abs(actual - nominal) > 0.5 / self.fps else nominal
-
-
 def preprocessed_chunks(
-    frames: Iterator[tuple[np.ndarray, float]],
+    frames: Iterator[np.ndarray],
     preprocess: FramePreprocessor,
-    timeline: FrameTimeline,
     chunk: int = 4,
     workers: int = 8,
     prefetch_frames: int = 512,
 ) -> Iterator[torch.Tensor]:
-    """Preprocess consecutive chunks of frames on a thread pool, yielding them in order.
+    """Preprocess consecutive chunks of (sampled) frames on a thread pool, yielding them in order.
 
     A feeder thread keeps submitting chunks while the consumer runs the models, so
-    decoding and preprocessing overlap with GPU work. Every frame's timestamp is
-    appended to ``timeline``.
+    decoding and preprocessing overlap with GPU work.
     """
     pool = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="frame-preprocess")
 
     def produce(emit: Callable[[Any], bool]) -> None:
         raw: list[np.ndarray] = []
-        for frame, timestamp in frames:
+        for frame in frames:
             raw.append(frame)
-            timeline.timestamps.append(timestamp)
             if len(raw) == chunk:
                 if not emit(pool.submit(preprocess, raw)):
                     return
@@ -466,20 +411,20 @@ class _Worker:
 class ProcessFramePool:
     """Persistent worker processes that resize frames decoded into shared memory.
 
-    The parent decodes sequentially with OpenCV directly into an input ring of
-    shared-memory slots; workers resize, crop and normalize each slot into an
-    output ring of pixel values (identical to ``ProcessorFrames``), which the
-    parent copies out in order.
+    The parent decodes sequentially directly into an input ring of shared-memory
+    slots, skipping frames that are not sampled; workers resize and normalize each
+    slot into an output ring of pixel values (identical to ``CpuFrames``), which
+    the parent copies out in order, repeating frames that fill several slots.
     Only slot indices cross process boundaries, never frames. Each worker has its
     own pipes, so a crashed worker fails the current video with an error instead
     of deadlocking the others, and is restarted for the next one. Serve one video
     at a time (the inference service holds a lock).
     """
 
-    def __init__(self, processor: VideoMAEImageProcessor, workers: int, slots_per_worker: int = 4):
+    def __init__(self, spec: FrameSpec, workers: int, slots_per_worker: int = 4):
         if workers < 1:
             raise ValueError("ProcessFramePool needs at least one worker")
-        self.processor = processor
+        self.spec = spec
         self.workers = workers
         # Input slots hold full-resolution frames (6 MB at 1080p): keep the ring small.
         self.slots = workers * slots_per_worker
@@ -523,8 +468,7 @@ class ProcessFramePool:
 
     def ring_bytes(self, height: int, width: int) -> int:
         """Shared memory for (height, width) frames; the same for either orientation."""
-        spec = resize_spec(self.processor, height, width)
-        channels, out_h, out_w = spec.output_shape(height, width)
+        channels, out_h, out_w = self.spec.resize_spec().output_shape()
         return self.slots * (height * width * 3 + channels * out_h * out_w * 4)
 
     def fits(self, height: int, width: int) -> bool:
@@ -554,14 +498,17 @@ class ProcessFramePool:
     def chunks(
         self,
         video_path: str | Path,
-        timeline: FrameTimeline,
+        counts: np.ndarray,
         chunk: int = 4,
         prefetch_frames: int = 512,
         *,
         decoder: str = "opencv",
         ffmpeg_threads: int = 0,
     ) -> Iterator[torch.Tensor]:
-        """Yield preprocessed frames (N, C, H, W) of ``video_path`` in order, ``chunk`` at a time."""
+        """Yield the preprocessed sampled frames (N, C, H, W) of ``video_path`` in order.
+
+        ``counts[i]`` is how many sampled slots source frame ``i`` fills (``frame_counts``).
+        """
         # Workers rotate frames in parallel; the ffmpeg decoder emits them unrotated too.
         capture = open_capture(video_path, decoder, ffmpeg_threads, autorotate=False)
         if not capture.isOpened():
@@ -569,13 +516,12 @@ class ProcessFramePool:
         try:
             rotate = _defer_rotation(capture) if decoder == "opencv" else _probe_rotation(video_path)
             ok, first = capture.read()
-            if not ok:
+            if not ok or len(counts) == 0:
                 return
-            first_timestamp = capture.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
             self._ensure_workers()
             self._job += 1
             yield from _background(
-                lambda emit: self._run(emit, capture, first, first_timestamp, rotate, video_path, timeline, chunk),
+                lambda emit: self._run(emit, capture, first, rotate, video_path, counts, chunk),
                 max(1, prefetch_frames // chunk),
                 "frame-collector",
             )
@@ -587,18 +533,17 @@ class ProcessFramePool:
         emit: Callable[[Any], bool],
         capture: cv2.VideoCapture,
         first: np.ndarray,
-        first_timestamp: float,
         rotate: int,
         video_path: str | Path,
-        timeline: FrameTimeline,
+        counts: np.ndarray,
         chunk: int,
     ) -> None:
         job = self._job
         workers = list(self._workers)
         height, width = first.shape[:2]
-        spec = resize_spec(self.processor, height, width, rotate)
+        spec = self.spec.resize_spec(rotate)
         in_shape = (self.slots, height, width, 3)
-        out_shape = (self.slots, *spec.output_shape(height, width))
+        out_shape = (self.slots, *spec.output_shape())
         in_shm = shared_memory.SharedMemory(create=True, size=int(np.prod(in_shape)))
         out_shm = shared_memory.SharedMemory(create=True, size=int(np.prod(out_shape)) * 4)
         rings = {
@@ -608,6 +553,8 @@ class ProcessFramePool:
         free: queue.Queue = queue.Queue()
         for slot in range(self.slots):
             free.put(slot)
+        # Sampled slots each kept frame fills, by kept-frame index (appended before submit).
+        repeats: list[int] = []
         # Decoder -> collector: (END, frame_count) or (ERROR, message).
         signal_recv, signal_send = multiprocessing.Pipe(duplex=False)
         stop = threading.Event()
@@ -617,15 +564,21 @@ class ProcessFramePool:
             workers[index % len(workers)].tasks.send(task)
 
         def decode() -> None:
+            # `index` counts submitted (kept) frames; `source` counts decoded frames.
             index = 0
             try:
                 ring = rings["in"]
                 slot = free.get()
                 ring[slot] = first
-                timeline.timestamps.append(first_timestamp)
+                repeats.append(int(counts[0]))
                 submit(slot, index)
-                index = 1
-                while not stop.is_set():
+                index, source = 1, 1
+                while not stop.is_set() and source < len(counts):
+                    if counts[source] == 0:
+                        if not capture.grab():
+                            break
+                        source += 1
+                        continue
                     try:
                         slot = free.get(timeout=0.1)
                     except queue.Empty:
@@ -636,11 +589,12 @@ class ProcessFramePool:
                     if frame.ctypes.data != ring[slot].ctypes.data:
                         # OpenCV allocated a new array: the frame size changed mid-video.
                         if frame.shape != ring[slot].shape:
-                            raise RuntimeError(f"Frame size changed at frame {index} of {video_path}")
+                            raise RuntimeError(f"Frame size changed at frame {source} of {video_path}")
                         ring[slot] = frame
-                    timeline.timestamps.append(capture.get(cv2.CAP_PROP_POS_MSEC) / 1000.0)
+                    repeats.append(int(counts[source]))
                     submit(slot, index)
                     index += 1
+                    source += 1
                 signal_send.send((END, index))
             except Exception as exc:
                 signal_send.send((ERROR, f"Cannot decode video {video_path}: {exc}"))
@@ -671,17 +625,19 @@ class ProcessFramePool:
                         raise RuntimeError(f"Preprocessing failed at frame {index}: {message}")
                     pending[index] = slot
                 while next_index in pending:
-                    group.append(pending.pop(next_index))
+                    group.extend([pending.pop(next_index)] * repeats[next_index])
                     next_index += 1
-                    if len(group) == chunk or next_index == total:
+                    if len(group) >= chunk or next_index == total:
                         pixels = torch.from_numpy(rings["out"][group])  # fancy indexing copies
-                        for used in group:
+                        for used in dict.fromkeys(group):
                             free.put(used)
                         group = []
                         if not emit(pixels):
                             return
                 if total is not None and next_index == total and group:
                     emit(torch.from_numpy(rings["out"][group]))
+                    for used in dict.fromkeys(group):
+                        free.put(used)
                     group = []
         finally:
             stop.set()
@@ -709,14 +665,16 @@ def iter_window_batches(
 ) -> Iterator[WindowBatch]:
     """Assemble windows starting at sorted ``starts`` from in-order preprocessed frame chunks.
 
-    Frames past the end of the video repeat the window's last frame and are marked
-    invalid. Frames no later window needs are released as batches are emitted.
+    Frames past the end of the video repeat the last decoded frame and are marked
+    invalid (a window starting past the end is entirely invalid, as in training).
+    Frames no later window needs are released as batches are emitted.
     """
     buffer: dict[int, torch.Tensor] = {}
     decoded = 0
+    last: torch.Tensor | None = None
 
     def fill(until: int) -> None:
-        nonlocal decoded
+        nonlocal decoded, last
         while decoded < until:
             pixels = next(chunks, None)
             if pixels is None:
@@ -724,17 +682,18 @@ def iter_window_batches(
             for offset, frame_pixels in enumerate(pixels):
                 buffer[decoded + offset] = frame_pixels
             decoded += len(pixels)
+            last = pixels[-1]
 
     for batch_begin in range(0, len(starts), batch_size):
         batch_starts = [int(s) for s in starts[batch_begin:batch_begin + batch_size]]
         windows, valid = [], []
         for start in batch_starts:
             fill(start + num_frames)
-            if start >= decoded:
+            if last is None:
                 raise RuntimeError(f"Cannot read frames at {start}")
-            available = min(num_frames, decoded - start)
+            available = max(0, min(num_frames, decoded - start))
             window = [buffer[start + i] for i in range(available)]
-            window += [window[-1]] * (num_frames - available)
+            window += [window[-1] if window else last] * (num_frames - available)
             windows.append(torch.stack(window))
             valid.append([True] * available + [False] * (num_frames - available))
 

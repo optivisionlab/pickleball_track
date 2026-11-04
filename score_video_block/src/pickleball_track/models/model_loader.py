@@ -1,14 +1,16 @@
-"""Load pretrained backbones and the trained fusion checkpoint.
+"""Load pretrained backbones and the trained fold ensemble.
 
 Three separate artifacts are involved:
 
-1. Pretrained backbone weights: VideoMAE (Hugging Face directory) and BEATs
-   (``BEATs_iter3_plus_AS2M.pt`` + microsoft/unilm source checkout). Both are
-   frozen and are not part of the trained checkpoint.
-2. The trained checkpoint (``best.pt``): ``{"model": AVFeatureModel state_dict,
-   "label2id": ...}``. Projection input sizes are read from its tensors.
-3. Architecture/preprocessing constants in ``core.config`` (frame count,
-   temporal tokens, audio rate, label order) which must match training.
+1. Pretrained backbone weights: VideoMAE fine-tuned on Kinetics (Hugging Face
+   directory) and BEATs (``BEATs_iter3_plus_AS2M.pt`` + microsoft/unilm source
+   checkout). Both are frozen and are not part of the trained checkpoint.
+2. The trained checkpoint (``pickleball_v4.pt``, made by
+   ``scripts/export_checkpoint.py``): one AVTFeatureModel state_dict per
+   cross-validation fold with that fold's feature mean/std, the CLIP embeddings
+   of the class descriptions and the model hyperparameters.
+3. Architecture/preprocessing constants in ``core.config`` (frame sampling,
+   window, spatial grid, audio rate, label order) which must match training.
 """
 
 from __future__ import annotations
@@ -20,17 +22,18 @@ from pathlib import Path
 from typing import Any
 
 import torch
-from transformers import VideoMAEImageProcessor, VideoMAEModel
+from transformers import VideoMAEModel
 
-from ..core.config import AUDIO_SR, LABEL2ID, NUM_VIDEO_FRAMES, WEIGHTS_DIR, Settings
+from ..core.config import AUDIO_SR, IMAGE_SIZE, LABEL2ID, NUM_VIDEO_FRAMES, WEIGHTS_DIR, Settings
 from ..core.exceptions import ModelLoadError
 from ..pipelines.frames import (
     FramePreprocessor,
+    FrameSpec,
     ProcessFramePool,
     TorchFrames,
     default_preprocess_workers,
 )
-from .architecture import AVFeatureModel
+from .architecture import AVTFeatureModel, FoldEnsemble
 from .components.audio_encoder import AudioEncoder
 from .components.video_encoder import VideoEncoder, adapt_videomae_to_frame_count
 
@@ -42,13 +45,13 @@ class ModelBundle:
     """Everything inference needs, loaded once per worker process."""
 
     device: torch.device
-    processor: VideoMAEImageProcessor
+    frame_spec: FrameSpec
     video_encoder: VideoEncoder
     audio_encoder: AudioEncoder
-    fusion_model: AVFeatureModel
+    fusion_model: FoldEnsemble
     # Sliding windows per forward pass.
     batch_size: int = 1
-    # None: exact Hugging Face processor on the CPU.
+    # None: exact training preprocessing on the CPU.
     frame_preprocessor: FramePreprocessor | None = None
     # Exact preprocessing on worker processes; used when frame_preprocessor is None.
     frame_pool: ProcessFramePool | None = None
@@ -66,7 +69,7 @@ DEFAULT_BATCH_SIZE = {"cuda": 16, "cpu": 4}
 
 _AMP_DTYPES = {"fp16": torch.float16, "bf16": torch.bfloat16}
 
-VIDEOMAE_CONFIG_FILES = ("config.json", "preprocessor_config.json")
+VIDEOMAE_CONFIG_FILES = ("config.json",)
 VIDEOMAE_WEIGHTS_FILE = "model.safetensors"
 
 
@@ -173,9 +176,7 @@ def _freeze(model: torch.nn.Module, device: torch.device) -> None:
     model.to(device)
 
 
-def load_videomae(
-    source: str, device: torch.device
-) -> tuple[VideoMAEModel, VideoMAEImageProcessor]:
+def load_videomae(source: str, device: torch.device) -> VideoMAEModel:
     logger.info("Loading pretrained VideoMAE", extra={"model": source})
     model_path = Path(source).expanduser()
     if model_path.is_dir():
@@ -185,11 +186,10 @@ def load_videomae(
         model_source = source
         load_options = {"cache_dir": str(WEIGHTS_DIR)}
 
-    processor = VideoMAEImageProcessor.from_pretrained(model_source, **load_options)
     model = VideoMAEModel.from_pretrained(model_source, **load_options)
     adapt_videomae_to_frame_count(model)
     _freeze(model, device)
-    return model, processor
+    return model
 
 
 def load_beats(beats_root: Path, checkpoint_path: Path, device: torch.device) -> Any:
@@ -212,65 +212,82 @@ def load_beats(beats_root: Path, checkpoint_path: Path, device: torch.device) ->
     return model
 
 
-def load_trained_model(checkpoint_path: str | Path, device: torch.device) -> AVFeatureModel:
-    """Build AVFeatureModel from the checkpoint's own tensor shapes and load it strictly."""
-    logger.info("Loading trained fusion checkpoint", extra={"checkpoint": str(checkpoint_path)})
+def load_trained_model(checkpoint_path: str | Path, device: torch.device) -> FoldEnsemble:
+    """Build the fold ensemble from the exported checkpoint and load every fold strictly."""
+    logger.info("Loading trained fold ensemble", extra={"checkpoint": str(checkpoint_path)})
     try:
         checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
     except Exception as exc:
         raise ModelLoadError(f"Cannot read trained checkpoint {checkpoint_path}: {exc}") from exc
+    if not isinstance(checkpoint, dict) or not checkpoint.get("folds"):
+        raise ModelLoadError(
+            "Trained checkpoint has no 'folds'; export it with scripts/export_checkpoint.py"
+        )
 
-    checkpoint_labels = checkpoint.get("label2id") if isinstance(checkpoint, dict) else None
+    checkpoint_labels = checkpoint.get("label2id")
     if checkpoint_labels is not None and checkpoint_labels != LABEL2ID:
         raise ModelLoadError(
             f"Checkpoint label mapping {checkpoint_labels!r} does not match "
             f"configured mapping {LABEL2ID!r}"
         )
 
-    state_dict = checkpoint.get("model") if isinstance(checkpoint, dict) else None
-    if not isinstance(state_dict, dict):
-        raise ModelLoadError("Trained checkpoint has no 'model' state_dict")
+    config = checkpoint.get("config", {})
+    class_text = checkpoint.get("class_text")
+    if not isinstance(class_text, torch.Tensor) or class_text.shape[0] != len(LABEL2ID):
+        raise ModelLoadError("Trained checkpoint has no class_text with one row per class")
+    models, means, stds = [], {"video": [], "audio": []}, {"video": [], "audio": []}
+    for fold in checkpoint["folds"]:
+        state_dict = fold.get("model")
+        if not isinstance(state_dict, dict):
+            raise ModelLoadError("Trained checkpoint fold has no 'model' state_dict")
+        try:
+            video_dim = int(state_dict["video_proj.net.0.weight"].shape[1])
+            audio_dim = int(state_dict["audio_proj.net.0.weight"].shape[1])
+            for name in ("video", "audio"):
+                means[name].append(fold["feature_mean"][name])
+                stds[name].append(fold["feature_std"][name])
+        except KeyError as exc:
+            raise ModelLoadError(f"Trained checkpoint fold is missing {exc}") from exc
+        model = AVTFeatureModel(
+            video_dim=video_dim, audio_dim=audio_dim, text_dim=int(class_text.shape[-1]),
+            fusion_dim=int(config.get("fusion_dim", 256)), heads=int(config.get("heads", 8)),
+            temporal_layers=int(config.get("temporal_layers", 2)),
+            temporal_length=int(config.get("seq_tokens", 16)),
+        )
+        try:
+            model.load_state_dict(state_dict, strict=True)
+        except RuntimeError as exc:
+            # The message lists missing/unexpected keys and shape mismatches.
+            raise ModelLoadError(f"Trained checkpoint does not match AVTFeatureModel: {exc}") from exc
+        models.append(model)
     try:
-        video_dim = int(state_dict["video_proj.net.0.weight"].shape[1])
-        audio_dim = int(state_dict["audio_proj.net.0.weight"].shape[1])
-    except KeyError as exc:
-        raise ModelLoadError(f"Trained checkpoint is missing projection weights: {exc}") from exc
-
-    model = AVFeatureModel(video_dim=video_dim, audio_dim=audio_dim)
-    try:
-        model.load_state_dict(state_dict, strict=True)
+        ensemble = FoldEnsemble(
+            models, class_text,
+            {name: torch.stack(values) for name, values in means.items()},
+            {name: torch.stack(values) for name, values in stds.items()},
+        )
     except RuntimeError as exc:
-        # The message lists missing/unexpected keys and shape mismatches.
-        raise ModelLoadError(f"Trained checkpoint does not match AVFeatureModel: {exc}") from exc
-    _freeze(model, device)
-    return model
-
-
-def _beats_feature_dim(audio_encoder: AudioEncoder) -> int:
-    # One second of silence; the feature size does not depend on the content.
-    segment = torch.zeros(1, AUDIO_SR, dtype=torch.float32)
-    padding_mask = torch.zeros(1, AUDIO_SR, dtype=torch.bool)
-    features, _ = audio_encoder(segment, padding_mask)
-    return int(features.shape[-1])
+        raise ModelLoadError(f"Folds of the trained checkpoint disagree in shape: {exc}") from exc
+    _freeze(ensemble, device)
+    return ensemble
 
 
 @torch.inference_mode()
-def warmup(bundle: ModelBundle, fps: float = 30.0) -> None:
+def warmup(bundle: ModelBundle, audio_seconds: float = 12.0) -> None:
     """Run one full batch so CUDA/cuBLAS initialization is not paid by the first request.
 
     cuDNN autotuning (``cudnn.benchmark``) is left off: it gave no steady-state
     speedup on an A30 and re-tunes for every new batch size, e.g. the last batch.
     """
-    crop = bundle.processor.crop_size
+    size = bundle.frame_spec.size
     batch = bundle.batch_size
-    pixel_values = torch.zeros(batch, NUM_VIDEO_FRAMES, 3, int(crop["height"]), int(crop["width"]))
+    pixel_values = torch.zeros(batch, NUM_VIDEO_FRAMES, 3, size, size)
     frame_valid = torch.ones(batch, NUM_VIDEO_FRAMES, dtype=torch.bool)
-    samples = int(round(NUM_VIDEO_FRAMES / fps * AUDIO_SR))
-    segment = torch.zeros(batch, samples)
-    padding_mask = torch.zeros(batch, samples, dtype=torch.bool)
     video_features, temporal_padding = bundle.video_encoder(pixel_values, frame_valid)
-    audio_features, audio_padding = bundle.audio_encoder(segment, padding_mask)
-    bundle.fusion_model(video_features, audio_features, audio_padding, temporal_padding)
+    timeline = bundle.audio_encoder.timeline(torch.zeros(int(audio_seconds * AUDIO_SR)))
+    query = torch.zeros(batch, video_features.shape[1])
+    audio_features = timeline.at(query) if timeline is not None else None
+    bundle.fusion_model(video_features, audio_features, temporal_padding)
     if bundle.device.type == "cuda":
         torch.cuda.synchronize(bundle.device)
 
@@ -285,33 +302,34 @@ def load_models(settings: Settings) -> ModelBundle:
     device = resolve_device(settings.device)
     amp_dtype = resolve_precision(settings.precision, device)
     batch_size = resolve_batch_size(settings.batch_size, device)
-    videomae, processor = load_videomae(settings.videomae, device)
+    videomae = load_videomae(settings.videomae, device)
     beats = load_beats(settings.beats_root, settings.beats_checkpoint, device)
     fusion_model = load_trained_model(settings.checkpoint_path, device)
 
     video_encoder = VideoEncoder(videomae, device, amp_dtype)
     audio_encoder = AudioEncoder(beats, device)
-    audio_dim = _beats_feature_dim(audio_encoder)
-    if fusion_model.video_proj.net[0].in_features != video_encoder.hidden_size:
+    audio_dim = audio_encoder.feature_dim()
+    if fusion_model.video_dim != video_encoder.feature_dim:
         raise ModelLoadError(
-            f"VideoMAE hidden size {video_encoder.hidden_size} does not match checkpoint "
-            f"video_dim {fusion_model.video_proj.net[0].in_features}"
+            f"VideoMAE feature size {video_encoder.feature_dim} (hidden {video_encoder.hidden_size} "
+            f"x mean + 2x2 grid) does not match checkpoint video_dim {fusion_model.video_dim}"
         )
-    if fusion_model.audio_proj.net[0].in_features != audio_dim:
+    if fusion_model.audio_dim != audio_dim:
         raise ModelLoadError(
-            f"BEATs feature size {audio_dim} does not match checkpoint "
-            f"audio_dim {fusion_model.audio_proj.net[0].in_features}"
+            f"BEATs feature size {audio_dim} does not match checkpoint audio_dim {fusion_model.audio_dim}"
         )
 
+    frame_spec = FrameSpec(size=IMAGE_SIZE)
     frame_preprocessor = (
-        TorchFrames(processor, device) if settings.gpu_preprocess and device.type == "cuda" else None
+        TorchFrames(frame_spec, device) if settings.gpu_preprocess and device.type == "cuda" else None
     )
     workers = default_preprocess_workers(settings.preprocess_workers)
-    frame_pool = ProcessFramePool(processor, workers) if frame_preprocessor is None and workers else None
+    frame_pool = ProcessFramePool(frame_spec, workers) if frame_preprocessor is None and workers else None
     logger.info(
         "Models loaded",
         extra={
             "device": str(device),
+            "folds": len(fusion_model.models),
             "videomae_precision": str(amp_dtype or torch.float32),
             "batch_size": batch_size,
             "gpu_preprocessing": frame_preprocessor is not None,
@@ -320,7 +338,7 @@ def load_models(settings: Settings) -> ModelBundle:
     )
     bundle = ModelBundle(
         device=device,
-        processor=processor,
+        frame_spec=frame_spec,
         video_encoder=video_encoder,
         audio_encoder=audio_encoder,
         fusion_model=fusion_model,

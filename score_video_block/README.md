@@ -24,50 +24,61 @@ src/pickleball_track/
     logging.py           JSON logging
   integrations/minio.py  MinIO client construction and endpoint validation
   models/
-    architecture.py      AVFeatureModel (trained fusion model)
-    components/          projection, cross-attention fusion, temporal transformer,
-                         prediction head, VideoMAE and BEATs wrappers
+    architecture.py      AVTFeatureModel (trained v4 model) + FoldEnsemble
+    components/          projection, cross-modal attention + gated fusion, temporal
+                         transformer, text-anchored head, VideoMAE and BEATs wrappers
     model_loader.py      backbone + checkpoint loading, ModelBundle
   pipelines/
-    frames.py            sequential decoding, preprocessing (threads or ProcessFramePool), window batches
-    frame_workers.py     exact resize/crop/normalize + worker process (NumPy/Pillow only)
-    preprocessing.py     video metadata, audio decoding, sliding windows, audio windows
-    postprocessing.py    window aggregation, smoothing, hit/miss event decoding
+    frames.py            sequential decoding, 30 fps sampling, preprocessing (threads or ProcessFramePool), window batches
+    frame_workers.py     training resize/normalize + worker process (NumPy/OpenCV only)
+    preprocessing.py     video metadata, audio decoding, sliding windows
+    postprocessing.py    window aggregation, hit/miss event decoding
   services/
     inference_service.py VideoInferenceService: whole-video inference
     video_jobs.py        VideoJobService: download, size checks, scoring
-scripts/infer_video.py   command-line inference on a local video (replaces inference.py)
+scripts/infer_video.py   command-line inference on a local video
+scripts/export_checkpoint.py  pack a training run (5 folds) into pickleball_v4.pt
 tests/unit, tests/integration, tests/fixtures
 ```
 
 ### Model
 
-The trained model is audiovisual:
+The served model is **v4** of `baseline/` (VideoMAE + BEATs + CLIP class
+descriptions), the best of v3/v4/v5 in the 5-fold user-grouped evaluation
+(event macro-F1 ±0.5 s: v3 0.931, **v4 0.951**, v5 0.838; v3 costs the same time,
+v5 only skips BEATs, ~0.5% of the processing time). The pipeline reproduces
+`baseline/pickleball_common.py`:
 
-1. VideoMAE (local `src/weights/videomae-base`, frozen) encodes 32-frame windows.
-   Its temporal position embeddings are interpolated from 16 to 32 frames; the
-   spatial tokens are mean-pooled into 16 temporal tokens (one per tubelet).
-2. BEATs (`BEATs_iter3_plus_AS2M.pt`, frozen, source from microsoft/unilm)
-   encodes the window's 16 kHz mono audio.
-3. The trained `AVFeatureModel` (`best.pt`) projects both modalities to 768-d,
-   fuses them with cross-attention, adds temporal positions, runs a 2-layer
-   temporal transformer and a 3-class head per temporal token.
+1. Frames are sampled by time at 30 fps (source frame `round(i * fps / 30)`,
+   so 60 fps videos skip every other frame), auto-rotated like OpenCV, resized to
+   224×224 with `cv2.INTER_AREA` (no crop) and ImageNet-normalized.
+2. VideoMAE fine-tuned on Kinetics (`src/weights/videomae-base-finetuned-kinetics`,
+   frozen; temporal position embeddings interpolated from 16 to 32 frames)
+   encodes 32-frame windows (1.07 s, stride 16). Each of the 16 temporal tokens
+   is the mean of all patches plus a 2×2 grid of patch means (3840-d).
+3. BEATs (`BEATs_iter3_plus_AS2M.pt`, frozen) runs once over the whole 16 kHz
+   mono recording in 10 s chunks; its 0.16 s time steps are linearly
+   interpolated at every video token's centre time. A video without audio is
+   scored from the video alone (as in training).
+4. The 5 per-fold `AVTFeatureModel`s of `pickleball_v4.pt` each standardize the
+   features with their own training statistics; their softmax outputs are
+   averaged. Overlapping windows are averaged per token.
+5. Runs of at least `MIN_EVENT_TOKENS` event tokens become hit/miss events
+   (class by summed probability, time = run centre).
 
-Labels are `no_event=0`, `hit=1`, `miss=2`; the checkpoint's `label2id` is
-checked when present. Audio is decoded with FFmpeg at its native rate,
-averaged to mono and resampled to 16 kHz with a port of
-`torchaudio.functional.resample` (`pipelines/resample.py`), reproducing the
-original `torchaudio.load` + `resample` steps without depending on torchaudio. Overlapping token probabilities are averaged, smoothed,
-thresholded and merged into hit/miss events using the inference
-hyperparameters below.
+On 12 training videos (each scored by the fold model that held it out) served
+token probabilities match the training test predictions to within 0.07 (99.9%
+same argmax) and the events are identical.
+
+Labels are `no_event=0`, `hit=1`, `miss=2`; the checkpoint's `label2id` is checked.
 
 ### Model lifecycle
 
 All models are loaded once per worker in the FastAPI lifespan, put in `eval()`
 mode with gradients disabled, and inference runs under `torch.inference_mode()`.
-The fusion checkpoint is loaded with `strict=True`; its projection input sizes
-are read from the checkpoint tensors and verified against VideoMAE's hidden
-size and BEATs' feature size at startup. If loading fails the process keeps
+Every fold is loaded with `strict=True`; its projection input sizes are read
+from the checkpoint tensors and verified against the VideoMAE token size
+(hidden × 5) and BEATs' feature size at startup. If loading fails the process keeps
 running, the error is logged, `/ready` returns `503` and `/api/v1/process`
 returns `503`. Inference is serialized per worker with a lock; the sync route
 runs in FastAPI's thread pool so the event loop is never blocked. Run one
@@ -97,16 +108,16 @@ variables take precedence.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `PICKLEBALL_CHECKPOINT` | `src/weights/best.pt` | Trained fusion checkpoint |
+| `PICKLEBALL_CHECKPOINT` | `src/weights/pickleball_v4.pt` | Trained fold ensemble (`scripts/export_checkpoint.py`) |
 | `PICKLEBALL_BEATS_CHECKPOINT` | `src/weights/BEATs_iter3_plus_AS2M.pt` | Pretrained BEATs weights |
 | `PICKLEBALL_BEATS_ROOT` | `vendor/unilm` | BEATs source checkout |
-| `PICKLEBALL_VIDEOMAE` | `src/weights/videomae-base` | Local model directory or model id |
-| `PICKLEBALL_VIDEOMAE_REPO` | `MCG-NJU/videomae-base` | Hub repo whose files missing from the local directory are downloaded at startup; empty = offline |
+| `PICKLEBALL_VIDEOMAE` | `src/weights/videomae-base-finetuned-kinetics` | Local model directory or model id |
+| `PICKLEBALL_VIDEOMAE_REPO` | `MCG-NJU/videomae-base-finetuned-kinetics` | Hub repo whose files missing from the local directory are downloaded at startup; empty = offline |
 | `PICKLEBALL_DEVICE` | `auto` | `auto`, `cpu`, or `cuda` |
 | `PICKLEBALL_BATCH_SIZE` | `0` | Sliding windows per forward pass; `0` = 16 on CUDA, 4 on CPU |
 | `PICKLEBALL_PRECISION` | `auto` | VideoMAE autocast: `auto` (fp16 on CUDA, fp32 on CPU), `fp32`, `fp16`, `bf16` |
-| `PICKLEBALL_GPU_PREPROCESS` | `false` | Resize/normalize frames on the GPU (pixels may differ by one 8-bit level) |
-| `PICKLEBALL_PREPROCESS_WORKERS` | `8` | Exact frame preprocessing processes (shared memory); `0` = threads in the API process |
+| `PICKLEBALL_GPU_PREPROCESS` | `false` | Resize/normalize frames on the GPU (area interpolation only approximates `INTER_AREA`) |
+| `PICKLEBALL_PREPROCESS_WORKERS` | `8` | Training-identical frame preprocessing processes (shared memory); `0` = threads in the API process |
 | `PICKLEBALL_MAX_VIDEO_BYTES` | `536870912` | Maximum MinIO object size |
 | `PICKLEBALL_INFERENCE_SLOTS` | `3` | Videos analysed at the same time; each slot has its own `PICKLEBALL_PREPROCESS_WORKERS` processes (~210 MB of `/dev/shm` at 1080p) and shares the loaded models |
 | `PICKLEBALL_RESERVED_SHORT_SLOTS` | `1` | Slots only short videos may use (capped to slots - 1), so short clips never wait behind long ones |
@@ -115,7 +126,7 @@ variables take precedence.
 | `PICKLEBALL_MAX_PENDING_JOBS` | `16` | Requests accepted at once (downloading, waiting for a slot or running); more get `429` |
 | `PICKLEBALL_MAX_CONCURRENT_DOWNLOADS` | `4` | Accepted jobs downloading from MinIO at once |
 | `PICKLEBALL_BUSY_RETRY_AFTER_SECONDS` | `10` | Minimum `Retry-After` sent with `429` (raised to half the average job time) |
-| `PICKLEBALL_DECODER` | `opencv` | `opencv` (as in training) or `ffmpeg` (ffmpeg CLI: ~2x faster, ~1/3 of the CPU on 10-bit HEVC, but HDR colours differ: validate scores first) |
+| `PICKLEBALL_DECODER` | `opencv` | `opencv` (as in training) or `ffmpeg` (ffmpeg CLI: ~1.5x faster on 10-bit HEVC, same speed on H.264, but iPhone HDR frames come out ~15% darker: event macro-F1 0.971 → 0.961 on 12 training videos) |
 | `PICKLEBALL_FFMPEG_THREADS` | `0` | ffmpeg decoding threads per video (`0` = automatic) |
 | `PICKLEBALL_DOWNLOAD_PARTS` | `4` | Parallel range requests per video download |
 | `PICKLEBALL_DOWNLOAD_PART_MIN_BYTES` | `8388608` | Smallest part; smaller videos use one request |
@@ -129,16 +140,30 @@ variables take precedence.
 
 Defined in `src/pickleball_track/core/config.py` (section *INFERENCE
 HYPERPARAMETERS*). Edit the defaults there, or override per deployment with
-environment variables; the CLI flags override both for one run. Defaults equal
-the original `inference.py`.
+environment variables; the CLI flags override both for one run.
 
 | Constant | Env variable | Default | CLI flag | Effect |
 | --- | --- | --- | --- | --- |
-| `HIT_THRESHOLD` | `PICKLEBALL_HIT_THRESHOLD` | `0.8` | `--hit-threshold` | min. smoothed probability for `hit` |
-| `MISS_THRESHOLD` | `PICKLEBALL_MISS_THRESHOLD` | `0.8` | `--miss-threshold` | min. smoothed probability for `miss` |
-| `EVENT_MIN_GAP` | `PICKLEBALL_EVENT_MIN_GAP` | `0.5` | `--event-gap` | seconds; joins/merges same-class events |
-| `TEMPORAL_SMOOTH_RADIUS` | `PICKLEBALL_SMOOTH_RADIUS` | `1` | `--smooth-radius` | moving-average radius, `0` disables |
-| `OVERLAP` | `PICKLEBALL_OVERLAP` | `0.5` | `--overlap` | sliding-window overlap in `[0, 1)` |
+| `EVENT_THRESHOLD` | `PICKLEBALL_EVENT_THRESHOLD` | `0.4` | `--event-threshold` / `--argmax` | a token is an event when P(hit) + P(miss) exceeds it; `argmax` = argmax is hit/miss |
+| `MIN_EVENT_TOKENS` | `PICKLEBALL_MIN_EVENT_TOKENS` | `8` | `--min-event-tokens` | shortest run of event tokens kept as an event (1 token = 1/15 s) |
+| `EVENT_SMOOTH_TOKENS` | `PICKLEBALL_EVENT_SMOOTH_TOKENS` | `1` | `--smooth-tokens` | moving average of P(event) in tokens; `1` disables |
+| `EVENT_AT_PEAK` | `PICKLEBALL_EVENT_AT_PEAK` | `false` | `--peak` | event time at the most confident token instead of the run centre |
+
+The defaults were tuned on real inference (2026-11-04) over two scenarios:
+2685 single-stroke clips of `data/video_capcut` (21 players, fore- and backhand,
+1785 hits / 900 misses; score: count-based hit/miss macro-F1 and the share of
+clips with exactly one event of the right class) and the 115 long training
+videos (held-out fold predictions, event macro-F1 with ±0.5 s matching).
+
+| Decoder | Clips exactly right | Clip macro-F1 | Long-video event macro-F1 |
+| --- | --- | --- | --- |
+| training (argmax, ≥ 3 tokens) | 96.8% | 0.981 | 0.951 |
+| **default (P(event) > 0.4, ≥ 8 tokens)** | **98.4%** | **0.990** | **0.952** |
+
+Misses gain the most (94.3% → 98.0% of miss clips exactly right). Chosen on
+other players, the setting holds on held-out players (leave-players-out, 4
+groups). Joining nearby runs looked best on single-stroke clips (0.997) but
+merged consecutive strokes of long videos (event F1 ≤ 0.63), so it is not used.
 
 `NUM_VIDEO_FRAMES`, `NUM_TEMPORAL_TOKENS`, `AUDIO_SR` and `LABEL2ID` in the
 *MODEL CONSTANTS* section are fixed by the trained checkpoint and must not be
@@ -150,24 +175,26 @@ Credentials are never logged and are hidden from `repr(Settings)`.
 
 On CUDA the pipeline is built for throughput:
 
-- The video is decoded **once, sequentially**, straight into a shared-memory ring.
-  Per-window seeking was removed: on variable-frame-rate phone videos
-  `CAP_PROP_POS_FRAMES` lands up to a second away from the requested frame. On
-  such videos the audio window follows the decoded frame timestamps;
-  constant-frame-rate videos keep `frame / fps` as in training.
+- The video is decoded **once, sequentially**, straight into a shared-memory ring;
+  frames that are not sampled (every other one at 60 fps) are only grabbed, and
+  decoding stops after the last sampled frame. Per-window seeking is avoided: on
+  variable-frame-rate phone videos `CAP_PROP_POS_FRAMES` lands up to a second
+  away from the requested frame.
 - `PICKLEBALL_PREPROCESS_WORKERS` worker processes rotate (portrait phone
-  videos), resize, crop and normalize each frame once (overlapping windows share
-  frames) while the GPU runs the previous batch. The result is **bit-identical**
-  to `VideoMAEImageProcessor` on OpenCV's frames (tested, including all display
-  rotations). Each worker has its own pipes; a crashed worker fails that request
-  with a `502` and is restarted for the next one.
-- `PICKLEBALL_BATCH_SIZE` windows go through VideoMAE, BEATs and the fusion model
-  together. VideoMAE runs under fp16 autocast (`PICKLEBALL_PRECISION`); BEATs
-  (its fbank overflows fp16) and the fusion model stay fp32.
+  videos), resize and normalize each sampled frame once (overlapping windows
+  share frames) while the GPU runs the previous batch. The result is
+  **bit-identical** to the training preprocessing (tested). Each worker has its
+  own pipes; a crashed worker fails that request with a `502` and is restarted
+  for the next one.
+- `PICKLEBALL_BATCH_SIZE` windows go through VideoMAE and the fusion ensemble
+  together; BEATs runs once per video before them. VideoMAE runs under fp16
+  autocast (`PICKLEBALL_PRECISION`); BEATs (its fbank overflows fp16) and the
+  fusion models stay fp32.
 - Models are warmed up at startup, so the first request is not slower.
 
-Measured on an NVIDIA A30 (24-core Xeon Silver 4310, shared) through
-`POST /api/v1/process` with a real MinIO download:
+Measured with the previous model (native-fps windows, PIL preprocessing) on an
+NVIDIA A30 (24-core Xeon Silver 4310, shared) through `POST /api/v1/process`
+with a real MinIO download:
 
 | Video | Before | Threads (`PREPROCESS_WORKERS=0`) | 8 worker processes (default) |
 | --- | --- | --- | --- |
@@ -175,11 +202,9 @@ Measured on an NVIDIA A30 (24-core Xeon Silver 4310, shared) through
 | 47 s, 1080×1920, constant frame rate | 82 s | 8.6–9.8 s | 7.5–9.7 s |
 | 65 s phone video, variable frame rate, rotated | 108 s | 13.5–15.9 s | 11.4–11.8 s |
 
-Hit/miss counts on constant-frame-rate videos are unchanged; token
-probabilities differ by ≤ 0.003 from fp32 (`PICKLEBALL_PRECISION=fp32` for
-exact fp32). On variable-frame-rate videos results change because the frames
-are now the right ones. Remaining time is CPU: decoding plus exact resizing
-costs ~25 ms of CPU per 1080p frame; batch sizes above 16 do not help.
+Remaining time is CPU: decoding plus exact resizing costs ~25 ms of CPU per
+1080p frame; batch sizes above 16 do not help. With v4 one GPU process scores a
+135 s 60 fps iPhone HEVC video in ~65 s and a 53 s H.264 video in ~9 s.
 
 Worker processes exchange frames through `/dev/shm` (~10 MB per worker for
 1080p). Docker's default 64 MB is too small: run containers with
@@ -224,7 +249,11 @@ and run it with `--shm-size=1g -e PICKLEBALL_DEVICE=cpu`.
 Command-line inference on a local file (writes `<video>.inference.json`):
 
 ```bash
-python scripts/infer_video.py --video match.mp4 [--checkpoint best.pt --hit-threshold 0.8 --miss-threshold 0.8 --event-gap 0.5 --smooth-radius 1 --overlap 0.5]
+python scripts/infer_video.py --video match.mp4 [--checkpoint pickleball_v4.pt --event-threshold 0.5 --min-event-tokens 3 --smooth-tokens 1 --peak]
+
+# Pack a new training run (baseline/run_pickleball.sh) for the service:
+python scripts/export_checkpoint.py --run-dir /data/Cuong/pickleball/artifacts/weights_pickleball/v4 \
+    --output src/weights/pickleball_v4.pt
 ```
 
 ## API Contract

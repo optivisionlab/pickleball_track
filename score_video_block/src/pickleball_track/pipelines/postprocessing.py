@@ -1,9 +1,14 @@
-"""Turn per-window token probabilities into a timeline and hit/miss events."""
+"""Turn per-window token probabilities into a timeline and hit/miss events.
+
+Both steps follow the training evaluation (baseline/pickleball_common.py:
+``stitch_timelines`` and ``decode_events``), so served events are the ones the
+reported event macro-F1 was measured on.
+"""
 
 from __future__ import annotations
 
-from collections import defaultdict
-from collections.abc import Callable, Sequence
+import math
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -11,16 +16,17 @@ from typing import Any
 import numpy as np
 import torch
 
-from ..core.config import EVENT_MIN_GAP, LABEL2ID, NUM_TEMPORAL_TOKENS, NUM_VIDEO_FRAMES, InferenceParams
+from ..core.config import FRAMES_PER_TOKEN, LABEL2ID, TARGET_FPS, InferenceParams
 
 ID2LABEL = {int(idx): name for name, idx in LABEL2ID.items()}
-ACTION_LABELS = frozenset({"hit", "miss"})
+NO_EVENT = LABEL2ID["no_event"]
 
 
 @dataclass(frozen=True)
 class WindowPrediction:
-    start_frame: int
+    start_frame: int  # in sampled frames
     probs: torch.Tensor  # (NUM_TEMPORAL_TOKENS, num_classes) softmax probabilities
+    token_valid: torch.Tensor | None = None  # (NUM_TEMPORAL_TOKENS,) bool; None = all valid
 
 
 def label_from_id(label_id: int) -> str:
@@ -30,93 +36,66 @@ def label_from_id(label_id: int) -> str:
         raise RuntimeError(f"Unknown class id: {label_id}") from None
 
 
+def token_time(token: float) -> float:
+    """Centre time (s) of token ``token`` of the video's token grid (may be fractional)."""
+    return (token * FRAMES_PER_TOKEN + (FRAMES_PER_TOKEN - 1) / 2) / TARGET_FPS
+
+
 def aggregate_predictions(
-    window_predictions: Sequence[WindowPrediction],
-    fps: float,
-    frame_time: Callable[[float], float] | None = None,
+    window_predictions: Sequence[WindowPrediction], num_sampled: int
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Average predictions from overlapping windows at the same time.
+    """Average overlapping windows into one probability per token of the video.
 
-    ``frame_time`` maps a frame index to seconds (default ``index / fps``).
+    Token ``k`` covers sampled frames ``2k, 2k + 1``; only valid tokens vote and a
+    token no window covers validly counts as no_event.
     """
-    if frame_time is None:
-        def frame_time(index: float) -> float:
-            return index / fps
-    votes = defaultdict(list)
-    frames_per_token = NUM_VIDEO_FRAMES // NUM_TEMPORAL_TOKENS
-
+    size = math.ceil(num_sampled / FRAMES_PER_TOKEN)
+    if not window_predictions or size == 0:
+        return np.empty((0,), dtype=np.float32), np.empty((0, len(LABEL2ID)), dtype=np.float32)
+    acc = np.zeros((size, len(LABEL2ID)), dtype=np.float64)
+    count = np.zeros(size, dtype=np.int64)
     for item in window_predictions:
-        start_frame = int(item.start_frame)
-        for token_idx in range(NUM_TEMPORAL_TOKENS):
-            center_frame = (
-                start_frame + token_idx * frames_per_token
-                + frames_per_token / 2.0
-            )
-            key = round(float(frame_time(center_frame)), 4)
-            votes[key].append(item.probs[token_idx])
-
-    times = sorted(votes)
-    if not times:
-        return (
-            np.empty((0,), dtype=np.float32),
-            np.empty((0, len(LABEL2ID)), dtype=np.float32),
-        )
-
-    probs = [torch.stack(votes[t], dim=0).mean(dim=0) for t in times]
-    return np.asarray(times, dtype=np.float32), torch.stack(probs).numpy()
+        probs = item.probs.numpy()
+        slots = item.start_frame // FRAMES_PER_TOKEN + np.arange(len(probs))
+        ok = slots < size
+        if item.token_valid is not None:
+            ok &= item.token_valid.numpy()
+        np.add.at(acc, slots[ok], probs[ok])
+        np.add.at(count, slots[ok], 1)
+    timeline = np.zeros_like(acc)
+    timeline[:, NO_EVENT] = 1.0
+    covered = count > 0
+    timeline[covered] = acc[covered] / count[covered, None]
+    times = np.array([token_time(k) for k in range(size)], dtype=np.float32)
+    return times, timeline.astype(np.float32)
 
 
-def smooth_probabilities(probs: Any, radius: int = 1) -> np.ndarray:
-    """Light moving-average smoothing on class probabilities."""
-    probs = np.asarray(probs, dtype=np.float32)
-    if radius <= 0 or len(probs) <= 1:
-        return probs.copy()
-    out = np.empty_like(probs)
-    for i in range(len(probs)):
-        lo = max(0, i - radius)
-        hi = min(len(probs), i + radius + 1)
-        out[i] = probs[lo:hi].mean(axis=0)
-    return out / np.clip(out.sum(axis=1, keepdims=True), 1e-8, None)
+def event_runs(probs: np.ndarray, params: InferenceParams) -> list[tuple[int, int, int, float]]:
+    """Runs of event tokens -> (first token, end token, label id, event token), as in training.
 
-
-def _event_from_indices(
-    times: Sequence[float], probs: np.ndarray, label_id: int, indices: list[int]
-) -> dict[str, Any] | None:
-    if not indices:
-        return None
-    vals = probs[indices, label_id]
-    best_idx = indices[int(np.argmax(vals))]
-    return {
-        "time": round(float(times[best_idx]), 4),
-        "label": label_from_id(label_id),
-        "confidence": round(float(probs[best_idx, label_id]), 6),
-        "start_time": round(float(times[indices[0]]), 4),
-        "end_time": round(float(times[indices[-1]]), 4),
-    }
-
-
-def merge_close_action_events(
-    events: Sequence[dict[str, Any]], max_distance: float = EVENT_MIN_GAP
-) -> list[dict[str, Any]]:
-    """Merge only same-class events closer than max_distance."""
-    if not events:
+    A token is an event when its argmax is hit/miss (``event_threshold`` None) or when
+    the smoothed P(event) = 1 - P(no_event) exceeds the threshold. Runs shorter than
+    ``min_event_tokens`` are dropped; the class is hit or miss by summed probability.
+    """
+    probs = np.asarray(probs, dtype=np.float64)
+    if len(probs) == 0:
         return []
-    merged: list[dict[str, Any]] = []
-    for e in sorted((dict(x) for x in events), key=lambda x: x["time"]):
-        if (
-            merged
-            and e["label"] in ACTION_LABELS
-            and e["label"] == merged[-1]["label"]
-            and e["time"] - merged[-1]["time"] <= max_distance
-        ):
-            prev = merged[-1]
-            best = dict(e if e["confidence"] > prev["confidence"] else prev)
-            best["start_time"] = round(min(prev["start_time"], e["start_time"]), 4)
-            best["end_time"] = round(max(prev["end_time"], e["end_time"]), 4)
-            merged[-1] = best
-        else:
-            merged.append(e)
-    return merged
+    p_event = 1.0 - probs[:, NO_EVENT]
+    if params.smooth_tokens > 1:
+        p_event = np.convolve(p_event, np.ones(params.smooth_tokens) / params.smooth_tokens, mode="same")
+    if params.event_threshold is None:
+        mask = probs.argmax(-1) != NO_EVENT
+    else:
+        mask = p_event > params.event_threshold
+    edges = np.diff(np.concatenate([[0], mask.astype(np.int8), [0]]))
+    runs = []
+    for i, j in zip(np.flatnonzero(edges == 1), np.flatnonzero(edges == -1), strict=True):
+        if j - i < params.min_event_tokens:
+            continue
+        label = 1 + int(probs[i:j, 1:].sum(0).argmax())
+        token = i + int(p_event[i:j].argmax()) if params.peak else (i + j - 1) / 2
+        runs.append((int(i), int(j), label, float(token)))
+    return runs
 
 
 def build_temporal_events(
@@ -124,62 +103,19 @@ def build_temporal_events(
     probs: Any,
     params: InferenceParams = InferenceParams(),
 ) -> list[dict[str, Any]]:
-    """Convert temporal probabilities to physical Hit/Miss events."""
-    if len(times) == 0:
-        return []
-    no_id, hit_id, miss_id = LABEL2ID["no_event"], LABEL2ID["hit"], LABEL2ID["miss"]
-    sm = smooth_probabilities(probs, params.smooth_radius)
-    labels = []
-    for p in sm:
-        h, m, n = float(p[hit_id]), float(p[miss_id]), float(p[no_id])
-        if h >= params.hit_threshold and h >= m and h >= n:
-            labels.append(hit_id)
-        elif m >= params.miss_threshold and m >= h and m >= n:
-            labels.append(miss_id)
-        else:
-            labels.append(no_id)
-
-    # Fill a short no-event gap only when the same action is on both sides.
-    i = 0
-    while i < len(labels):
-        if labels[i] not in (hit_id, miss_id):
-            i += 1
-            continue
-        action = labels[i]
-        j = i + 1
-        while j < len(labels) and labels[j] == no_id:
-            j += 1
-        if j < len(labels) and labels[j] == action and times[j] - times[i] <= params.event_min_gap:
-            labels[i + 1:j] = [action] * (j - i - 1)
-            i = j
-        else:
-            i += 1
-
-    # Group consecutive runs of the same action label into events.
-    raw = []
-    cur: int | None = None
-    idxs: list[int] = []
-    for idx, label in enumerate(labels):
-        if label in (hit_id, miss_id):
-            if cur is None:
-                cur, idxs = label, [idx]
-            elif label == cur:
-                idxs.append(idx)
-            else:
-                e = _event_from_indices(times, sm, cur, idxs)
-                if e:
-                    raw.append(e)
-                cur, idxs = label, [idx]
-        elif cur is not None:
-            e = _event_from_indices(times, sm, cur, idxs)
-            if e:
-                raw.append(e)
-            cur, idxs = None, []
-    if cur is not None:
-        e = _event_from_indices(times, sm, cur, idxs)
-        if e:
-            raw.append(e)
-    return merge_close_action_events(raw, params.event_min_gap)
+    """Hit/miss events of a token timeline (``times`` from ``aggregate_predictions``)."""
+    probs = np.asarray(probs, dtype=np.float32)
+    events = []
+    for first, end, label, token in event_runs(probs, params):
+        events.append({
+            "time": round(token_time(token), 4),
+            "label": label_from_id(label),
+            # Mean probability of the event's class over its run.
+            "confidence": round(float(probs[first:end, label].mean()), 6),
+            "start_time": round(float(times[first]), 4),
+            "end_time": round(float(times[end - 1]), 4),
+        })
+    return events
 
 
 def build_json_result(

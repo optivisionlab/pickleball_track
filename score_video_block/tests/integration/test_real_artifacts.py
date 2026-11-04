@@ -26,7 +26,8 @@ def models():
 
 def test_real_checkpoint_loads_strictly(models):
     assert not models.fusion_model.training
-    assert models.fusion_model.video_proj.net[0].in_features == models.video_encoder.hidden_size
+    assert models.fusion_model.video_dim == models.video_encoder.feature_dim
+    assert len(models.fusion_model.models) == 5
 
 
 @pytest.mark.skipif(not os.getenv("PICKLEBALL_TEST_VIDEO"), reason="PICKLEBALL_TEST_VIDEO not set")

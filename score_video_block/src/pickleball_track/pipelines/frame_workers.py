@@ -1,7 +1,7 @@
-"""Exact VideoMAE frame preprocessing and the worker process that runs it.
+"""Training-identical frame preprocessing and the worker process that runs it.
 
 Kept free of torch/transformers imports: worker processes are spawned and only
-need NumPy and Pillow.
+need NumPy and OpenCV.
 """
 
 from __future__ import annotations
@@ -10,69 +10,55 @@ from dataclasses import dataclass
 from multiprocessing import shared_memory
 from multiprocessing.connection import Connection
 
+import cv2
 import numpy as np
-import PIL.Image
 
 # Result kinds. END is posted by the parent itself once decoding has finished.
 DONE, ERROR, END = "done", "error", "end"
 
-
-@dataclass(frozen=True, eq=False)
-class ResizeSpec:
-    """The processor's resize + center crop geometry for one input frame size, and its pixel LUT."""
-
-    resize: tuple[int, int] | None  # (height, width); None skips resizing
-    resample: int  # PIL resample code
-    crop: tuple[int, int, int, int] | None  # (top, left, height, width); None skips cropping
-    # (3, 256) float32: the processor's rescale + normalize of every uint8 value per channel.
-    lut: np.ndarray
-    # Clockwise display rotation (0/90/180/270) still to apply, as OpenCV's
-    # CAP_PROP_ORIENTATION_AUTO would; resize/crop refer to the rotated frame.
-    rotate: int = 0
-
-    def output_shape(self, height: int, width: int) -> tuple[int, int, int]:
-        """Pixel values (C, H, W) produced for a (height, width) frame."""
-        if self.crop is not None:
-            return 3, self.crop[2], self.crop[3]
-        if self.resize is not None:
-            return 3, self.resize[0], self.resize[1]
-        return (3, width, height) if self.rotate in (90, 270) else (3, height, width)
-
-
-# Clockwise rotation -> PIL transpose (PIL's ROTATE_* turn counter-clockwise).
+# Clockwise display rotation -> cv2.rotate code (what CAP_PROP_ORIENTATION_AUTO applies).
 _CLOCKWISE = {
-    90: PIL.Image.Transpose.ROTATE_270,
-    180: PIL.Image.Transpose.ROTATE_180,
-    270: PIL.Image.Transpose.ROTATE_90,
+    90: cv2.ROTATE_90_CLOCKWISE,
+    180: cv2.ROTATE_180,
+    270: cv2.ROTATE_90_COUNTERCLOCKWISE,
 }
 
 
-def resize_and_crop(frame: np.ndarray, spec: ResizeSpec) -> np.ndarray:
-    """BGR uint8 frame -> RGB uint8 (H, W, 3), pixel-identical to VideoMAEImageProcessor.
+@dataclass(frozen=True, eq=False)
+class ResizeSpec:
+    """Output size of every frame, its pixel LUT and the rotation still to apply."""
 
-    The processor converts the uint8 RGB image to PIL, resizes it with
-    ``reducing_gap=None`` and center-crops the result.
+    size: tuple[int, int]  # (height, width)
+    # (3, 256) float32: rescale + normalize of every uint8 value per RGB channel.
+    lut: np.ndarray
+    # Clockwise display rotation (0/90/180/270) still to apply, as OpenCV's
+    # CAP_PROP_ORIENTATION_AUTO would, before resizing.
+    rotate: int = 0
+
+    def output_shape(self) -> tuple[int, int, int]:
+        """Pixel values (C, H, W) produced for any input frame."""
+        return 3, self.size[0], self.size[1]
+
+
+def resize_frame(frame: np.ndarray, spec: ResizeSpec) -> np.ndarray:
+    """BGR uint8 frame -> RGB uint8 (H, W, 3), as in training.
+
+    Training reads frames with OpenCV (auto-rotated), resizes them with
+    ``cv2.resize(..., INTER_AREA)`` straight to the output size (no aspect-preserving
+    resize, no crop) and converts BGR to RGB. Resizing works per channel, so
+    converting first or last gives the same pixels.
     """
-    height, width = frame.shape[:2]
-    # Same pixels as cvtColor(BGR2RGB) + Image.fromarray, in one cheaper copy.
-    image = PIL.Image.frombuffer("RGB", (width, height), np.ascontiguousarray(frame), "raw", "BGR", 0, 1)
     if spec.rotate:
-        # A pure pixel permutation, identical to OpenCV's cv::rotate.
-        image = image.transpose(_CLOCKWISE[spec.rotate])
-    if spec.resize is not None:
-        image = image.resize((spec.resize[1], spec.resize[0]), resample=spec.resample, reducing_gap=None)
-    rgb = np.asarray(image)
-    if spec.crop is not None:
-        top, left, crop_h, crop_w = spec.crop
-        rgb = rgb[top:top + crop_h, left:left + crop_w]
-    return rgb
+        frame = cv2.rotate(frame, _CLOCKWISE[spec.rotate])
+    resized = cv2.resize(frame, (spec.size[1], spec.size[0]), interpolation=cv2.INTER_AREA)
+    return resized[..., ::-1]
 
 
 def to_pixels(rgb: np.ndarray, lut: np.ndarray, out: np.ndarray | None = None) -> np.ndarray:
     """RGB uint8 (..., H, W, 3) -> float32 (..., 3, H, W) through the per-channel LUT.
 
-    Equal to the processor's float64 rescale, float32 cast and float32 normalize,
-    which are element-wise and so a function of each uint8 value alone.
+    The training normalization (float32 ``x / 255``, then ``(x - mean) / std``) is
+    element-wise and so a function of each uint8 value alone.
     """
     if out is None:
         out = np.empty((*rgb.shape[:-3], 3, *rgb.shape[-3:-1]), dtype=np.float32)
@@ -120,6 +106,7 @@ def worker_main(tasks: Connection, results: Connection) -> None:
     ``(slots, 3, H', W')`` pixel values; ``None`` stops the worker.
     Result: ``(DONE, job, frame_index, slot, None)`` or ``(ERROR, job, frame_index, slot, message)``.
     """
+    cv2.setNumThreads(1)  # one frame per worker at a time; parallelism comes from the workers
     rings = _Rings()
     try:
         while True:
@@ -132,7 +119,7 @@ def worker_main(tasks: Connection, results: Connection) -> None:
             job, index, slot, in_name, in_shape, out_name, out_shape, spec = task
             try:
                 frames, outputs = rings.get(in_name, in_shape, out_name, out_shape)
-                to_pixels(resize_and_crop(frames[slot], spec), spec.lut, out=outputs[slot])
+                to_pixels(resize_frame(frames[slot], spec), spec.lut, out=outputs[slot])
                 results.send((DONE, job, index, slot, None))
             except Exception as exc:  # reported to the parent, which raises
                 results.send((ERROR, job, index, slot, f"{type(exc).__name__}: {exc}"))

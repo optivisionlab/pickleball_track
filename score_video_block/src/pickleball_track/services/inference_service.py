@@ -1,4 +1,4 @@
-"""Run the trained audiovisual model over a whole video with sliding windows."""
+"""Run the trained audiovisual fold ensemble over a whole video with sliding windows."""
 
 from __future__ import annotations
 
@@ -9,18 +9,21 @@ from contextlib import closing
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import torch
 
-from ..core.config import NUM_VIDEO_FRAMES, InferenceParams
+from ..core.config import FRAMES_PER_TOKEN, NUM_TEMPORAL_TOKENS, NUM_VIDEO_FRAMES, TARGET_FPS, InferenceParams
+from ..models.components.audio_encoder import AudioTimeline
 from ..models.model_loader import ModelBundle
 from ..pipelines.frames import (
-    FrameTimeline,
+    CpuFrames,
     ProcessFramePool,
-    ProcessorFrames,
     WindowBatch,
+    frame_counts,
     iter_frames,
     iter_window_batches,
     preprocessed_chunks,
+    sample_frames,
 )
 from ..pipelines.postprocessing import (
     WindowPrediction,
@@ -30,10 +33,10 @@ from ..pipelines.postprocessing import (
 )
 from ..pipelines.preprocessing import (
     VideoInfo,
-    build_windows,
-    get_audio_window,
     get_video_info,
     load_audio,
+    num_sampled_frames,
+    window_starts,
 )
 from .slot_scheduler import SlotScheduler
 
@@ -74,7 +77,7 @@ class VideoInferenceService:
         for _ in range(slots - 1):
             pool = None
             if models.frame_pool is not None:
-                pool = ProcessFramePool(models.processor, models.frame_pool.workers)
+                pool = ProcessFramePool(models.frame_spec, models.frame_pool.workers)
                 self._extra_pools.append(pool)
             pools.append(pool)
         self.scheduler: SlotScheduler[ProcessFramePool | None] = SlotScheduler(
@@ -100,49 +103,39 @@ class VideoInferenceService:
         self._extra_pools = []
 
     @torch.inference_mode()
-    def predict_batch(
-        self,
-        batch: WindowBatch,
-        waveform: torch.Tensor,
-        timeline: FrameTimeline,
-        window_duration: float,
-    ) -> torch.Tensor:
-        """Softmax probabilities (B, NUM_TEMPORAL_TOKENS, num_classes) for a batch of windows."""
+    def predict_batch(self, batch: WindowBatch, audio: AudioTimeline | None) -> tuple[torch.Tensor, torch.Tensor]:
+        """Probabilities (B, NUM_TEMPORAL_TOKENS, num_classes) and token validity (B, NUM_TEMPORAL_TOKENS)."""
         models = self.models
         video_features, temporal_padding = models.video_encoder(batch.pixel_values, batch.frame_valid)
-        audio = [
-            get_audio_window(waveform, timeline.time(start), window_duration)
-            for start in batch.starts
-        ]
-        segments = torch.cat([segment for segment, _ in audio])
-        padding_mask = torch.cat([mask for _, mask in audio])
-        audio_features, audio_padding = models.audio_encoder(segments, padding_mask)
-        logits = models.fusion_model(
-            video_features, audio_features, audio_padding, temporal_padding
-        )
-        return torch.softmax(logits, dim=-1).float().cpu()
+        audio_features = None
+        if audio is not None:
+            # Audio features at every token's centre time (training aligns them the same way).
+            tokens = torch.tensor(batch.starts)[:, None] // FRAMES_PER_TOKEN + torch.arange(NUM_TEMPORAL_TOKENS)
+            audio_features = audio.at(token_time_tensor(tokens))
+        probs = models.fusion_model(video_features, audio_features, temporal_padding)
+        return probs.float().cpu(), (~temporal_padding).cpu()
 
     def _frame_chunks(
         self,
         video_path: Path,
         info: VideoInfo,
-        timeline: FrameTimeline,
+        counts: np.ndarray,
         pool: ProcessFramePool | None,
     ) -> Iterator[torch.Tensor]:
-        """Preprocessed frames in order: the slot's worker processes if available, else threads."""
+        """Preprocessed sampled frames in order: the slot's worker processes if available, else threads."""
         models = self.models
         if pool is not None and models.frame_preprocessor is None:
             if pool.fits(info.height, info.width):
-                yield from pool.chunks(video_path, timeline, decoder=self.decoder, ffmpeg_threads=self.ffmpeg_threads)
+                yield from pool.chunks(video_path, counts, decoder=self.decoder, ffmpeg_threads=self.ffmpeg_threads)
                 return
             logger.warning(
                 "Not enough shared memory for preprocessing workers; using threads "
                 "(raise /dev/shm, e.g. docker run --shm-size=1g)",
                 extra={"required_bytes": pool.ring_bytes(info.height, info.width)},
             )
-        preprocess = models.frame_preprocessor or ProcessorFrames(models.processor)
+        preprocess = models.frame_preprocessor or CpuFrames(models.frame_spec)
         with closing(iter_frames(video_path, decoder=self.decoder, ffmpeg_threads=self.ffmpeg_threads)) as frames:
-            yield from preprocessed_chunks(frames, preprocess, timeline)
+            yield from preprocessed_chunks(sample_frames(frames, counts), preprocess)
 
     def predict(self, video_path: str | Path) -> dict[str, Any]:
         video_path = Path(video_path)
@@ -169,33 +162,35 @@ class VideoInferenceService:
             )
 
             audio_started_at = time.perf_counter()
-            waveform = load_audio(video_path)
+            audio = models.audio_encoder.timeline(load_audio(video_path))
             audio_seconds = time.perf_counter() - audio_started_at
-            starts = build_windows(info.num_frames, NUM_VIDEO_FRAMES, self.params.overlap)
-            window_duration = NUM_VIDEO_FRAMES / info.fps
+            num_sampled = num_sampled_frames(info)
+            counts = frame_counts(info.num_frames, info.fps)
+            starts = window_starts(num_sampled)
             logger.info(
                 "Running temporal windows",
                 extra={
                     "window_count": len(starts),
+                    "sampled_frames": num_sampled,
+                    "has_audio": audio is not None,
                     "batch_size": models.batch_size,
                     "device": str(models.device),
                 },
             )
-            timeline = FrameTimeline(info.fps)
             window_predictions = []
             windows_started_at = time.perf_counter()
             # closing() stops decoding/preprocessing even if inference raises midway.
-            with closing(self._frame_chunks(video_path, info, timeline, pool)) as chunks:
+            with closing(self._frame_chunks(video_path, info, counts, pool)) as chunks:
                 batches = iter_window_batches(chunks, starts, NUM_VIDEO_FRAMES, models.batch_size)
                 for batch in batches:
-                    probs = self.predict_batch(batch, waveform, timeline, window_duration)
+                    probs, token_valid = self.predict_batch(batch, audio)
                     window_predictions.extend(
-                        WindowPrediction(start_frame=start, probs=window_probs)
-                        for start, window_probs in zip(batch.starts, probs, strict=True)
+                        WindowPrediction(start_frame=start, probs=window_probs, token_valid=valid)
+                        for start, window_probs, valid in zip(batch.starts, probs, token_valid, strict=True)
                     )
 
             windows_seconds = time.perf_counter() - windows_started_at
-            times, probs = aggregate_predictions(window_predictions, info.fps, timeline.time)
+            times, probs = aggregate_predictions(window_predictions, num_sampled)
             events = build_temporal_events(times, probs, self.params)
             result = build_json_result(video_path, times, probs, events)
             logger.info(
@@ -203,7 +198,7 @@ class VideoInferenceService:
                 extra={
                     "hit_count": result["total_hits"],
                     "miss_count": result["total_misses"],
-                    "audio_decode_seconds": round(audio_seconds, 4),
+                    "audio_seconds": round(audio_seconds, 4),
                     "video_and_model_seconds": round(windows_seconds, 4),
                     "duration_seconds": round(time.perf_counter() - started_at, 4),
                 },
@@ -211,3 +206,9 @@ class VideoInferenceService:
         finally:
             self.scheduler.release(pool, short)
         return result
+
+
+def token_time_tensor(tokens: torch.Tensor) -> torch.Tensor:
+    """Centre times (s) of token indices, computed in float64 like training's ``token_center_times``."""
+    frames = tokens.double() * FRAMES_PER_TOKEN
+    return ((frames + (FRAMES_PER_TOKEN - 1) / 2) / TARGET_FPS).float()

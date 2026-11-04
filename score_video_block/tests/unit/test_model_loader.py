@@ -6,7 +6,6 @@ import torch
 from pickleball_track.core.config import LABEL2ID
 from pickleball_track.core.exceptions import ModelLoadError
 from pickleball_track.models import model_loader
-from pickleball_track.models.architecture import AVFeatureModel
 from pickleball_track.models.model_loader import (
     load_models,
     load_trained_model,
@@ -16,74 +15,113 @@ from pickleball_track.models.model_loader import (
     resolve_precision,
 )
 
-from ..helpers import TINY_AUDIO_DIM, TINY_VIDEO_DIM, build_tiny_fusion
+from ..helpers import (
+    TINY_AUDIO_DIM,
+    TINY_VIDEO_DIM,
+    build_tiny_checkpoint,
+    build_tiny_ensemble,
+)
 
 
-def _save_checkpoint(path, state_dict, **extra):
-    torch.save({"model": state_dict, **extra}, path)
+def _save(path, checkpoint):
+    torch.save(checkpoint, path)
     return path
 
 
-def test_checkpoint_round_trip_reproduces_outputs(tmp_path):
-    reference = build_tiny_fusion(seed=3)
-    checkpoint = _save_checkpoint(
-        tmp_path / "best.pt", reference.state_dict(), label2id=dict(LABEL2ID)
-    )
+def _inputs(batch=2):
+    torch.manual_seed(0)
+    padding = torch.zeros(batch, 16, dtype=torch.bool)
+    padding[1, 12:] = True
+    return torch.randn(batch, 16, TINY_VIDEO_DIM), torch.randn(batch, 16, TINY_AUDIO_DIM), padding
 
-    loaded = load_trained_model(checkpoint, torch.device("cpu"))
+
+def test_checkpoint_round_trip_reproduces_the_ensemble(tmp_path):
+    reference = build_tiny_ensemble(folds=2)
+    path = _save(tmp_path / "model.pt", build_tiny_checkpoint(folds=2))
+
+    loaded = load_trained_model(path, torch.device("cpu"))
 
     assert not loaded.training
     assert all(not p.requires_grad for p in loaded.parameters())
-    assert loaded.video_proj.net[0].in_features == TINY_VIDEO_DIM
-    assert loaded.audio_proj.net[0].in_features == TINY_AUDIO_DIM
-    torch.manual_seed(0)
-    inputs = (
-        torch.randn(1, 16, TINY_VIDEO_DIM),
-        torch.randn(1, 10, TINY_AUDIO_DIM),
-        torch.tensor([[False] * 8 + [True] * 2]),
-        torch.tensor([[False] * 12 + [True] * 4]),
-    )
+    assert len(loaded.models) == 2
+    assert (loaded.video_dim, loaded.audio_dim) == (TINY_VIDEO_DIM, TINY_AUDIO_DIM)
+    video, audio, padding = _inputs()
     with torch.inference_mode():
-        torch.testing.assert_close(loaded(*inputs), reference(*inputs))
+        probs = loaded(video, audio, padding)
+        torch.testing.assert_close(probs, reference(video, audio, padding))
+    assert probs.shape == (2, 16, 3)
+    torch.testing.assert_close(probs.sum(-1), torch.ones(2, 16))
+
+
+def test_ensemble_averages_its_folds():
+    ensemble = build_tiny_ensemble(folds=2)
+    video, audio, padding = _inputs()
+
+    with torch.inference_mode():
+        both = ensemble(video, audio, padding)
+        singles = []
+        for k in range(2):
+            single = type(ensemble)(
+                [ensemble.models[k]], ensemble.class_text,
+                {"video": ensemble.video_mean[k:k + 1], "audio": ensemble.audio_mean[k:k + 1]},
+                {"video": ensemble.video_std[k:k + 1], "audio": ensemble.audio_std[k:k + 1]},
+            ).eval()
+            singles.append(single(video, audio, padding))
+
+    torch.testing.assert_close(both, (singles[0] + singles[1]) / 2)
+
+
+def test_missing_audio_is_handled_like_training():
+    ensemble = build_tiny_ensemble()
+    video, _, padding = _inputs()
+
+    with torch.inference_mode():
+        probs = ensemble(video, None, padding)
+
+    assert torch.isfinite(probs).all()
 
 
 def test_checkpoint_label_mismatch_is_rejected(tmp_path):
-    checkpoint = _save_checkpoint(
-        tmp_path / "best.pt",
-        build_tiny_fusion().state_dict(),
-        label2id={"hit": 0, "miss": 1, "no_event": 2},
-    )
+    checkpoint = build_tiny_checkpoint()
+    checkpoint["label2id"] = {"hit": 0, "miss": 1, "no_event": 2}
 
     with pytest.raises(ModelLoadError, match="label mapping"):
-        load_trained_model(checkpoint, torch.device("cpu"))
+        load_trained_model(_save(tmp_path / "model.pt", checkpoint), torch.device("cpu"))
 
 
 def test_checkpoint_with_missing_keys_is_rejected_strictly(tmp_path):
-    state_dict = build_tiny_fusion().state_dict()
-    del state_dict["head.net.6.weight"]
+    checkpoint = build_tiny_checkpoint()
+    del checkpoint["folds"][1]["model"]["head.bias"]
 
-    with pytest.raises(ModelLoadError, match="head.net.6.weight"):
-        load_trained_model(_save_checkpoint(tmp_path / "best.pt", state_dict), torch.device("cpu"))
+    with pytest.raises(ModelLoadError, match="head.bias"):
+        load_trained_model(_save(tmp_path / "model.pt", checkpoint), torch.device("cpu"))
 
 
 def test_checkpoint_with_unexpected_keys_is_rejected_strictly(tmp_path):
-    state_dict = build_tiny_fusion().state_dict()
-    state_dict["extra.weight"] = torch.zeros(1)
+    checkpoint = build_tiny_checkpoint()
+    checkpoint["folds"][0]["model"]["extra.weight"] = torch.zeros(1)
 
     with pytest.raises(ModelLoadError, match="extra.weight"):
-        load_trained_model(_save_checkpoint(tmp_path / "best.pt", state_dict), torch.device("cpu"))
+        load_trained_model(_save(tmp_path / "model.pt", checkpoint), torch.device("cpu"))
 
 
-def test_checkpoint_without_model_state_is_rejected(tmp_path):
-    path = tmp_path / "best.pt"
-    torch.save({"label2id": dict(LABEL2ID)}, path)
+def test_checkpoint_without_feature_statistics_is_rejected(tmp_path):
+    checkpoint = build_tiny_checkpoint()
+    del checkpoint["folds"][0]["feature_std"]
 
-    with pytest.raises(ModelLoadError, match="state_dict"):
+    with pytest.raises(ModelLoadError, match="feature_std"):
+        load_trained_model(_save(tmp_path / "model.pt", checkpoint), torch.device("cpu"))
+
+
+def test_old_single_model_checkpoint_is_rejected(tmp_path):
+    path = _save(tmp_path / "best.pt", {"model": {}, "label2id": dict(LABEL2ID)})
+
+    with pytest.raises(ModelLoadError, match="export_checkpoint"):
         load_trained_model(path, torch.device("cpu"))
 
 
 def test_unreadable_checkpoint_is_rejected(tmp_path):
-    path = tmp_path / "best.pt"
+    path = tmp_path / "model.pt"
     path.write_bytes(b"not a checkpoint")
 
     with pytest.raises(ModelLoadError, match="Cannot read"):
@@ -151,14 +189,12 @@ def test_videomae_download_failure_is_a_model_load_error(test_settings, tmp_path
 
 def test_load_models_rejects_backbone_checkpoint_dimension_mismatch(monkeypatch, test_settings, tiny_models):
     monkeypatch.setattr(model_loader, "missing_model_assets", lambda settings: [])
-    monkeypatch.setattr(
-        model_loader, "load_videomae",
-        lambda source, device: (tiny_models.video_encoder.model, tiny_models.processor),
-    )
+    monkeypatch.setattr(model_loader, "load_videomae", lambda source, device: tiny_models.video_encoder.model)
     monkeypatch.setattr(
         model_loader, "load_beats", lambda root, checkpoint, device: tiny_models.audio_encoder.model
     )
-    mismatched = AVFeatureModel(video_dim=TINY_VIDEO_DIM, audio_dim=TINY_AUDIO_DIM + 1)
+    mismatched = build_tiny_ensemble()
+    mismatched.audio_mean = torch.zeros(2, TINY_AUDIO_DIM + 1)
     monkeypatch.setattr(model_loader, "load_trained_model", lambda path, device: mismatched)
 
     with pytest.raises(ModelLoadError, match="BEATs feature size"):

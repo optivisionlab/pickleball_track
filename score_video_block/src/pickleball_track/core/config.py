@@ -23,14 +23,42 @@ WEIGHTS_DIR = PROJECT_ROOT / "src" / "weights"
 
 
 # =========================
-# MODEL CONSTANTS (fixed by training)
+# MODEL CONSTANTS (fixed by training: baseline/pickleball_common.py)
 # =========================
 
 AUDIO_SR = 16000
 
+# Frames are sampled by time at TARGET_FPS (source frame round(i * fps / TARGET_FPS)),
+# so a window always covers NUM_VIDEO_FRAMES / TARGET_FPS ~= 1.07 s.
+TARGET_FPS = 30.0
+
 NUM_VIDEO_FRAMES = 32
 
 NUM_TEMPORAL_TOKENS = 16
+
+FRAMES_PER_TOKEN = NUM_VIDEO_FRAMES // NUM_TEMPORAL_TOKENS
+
+# Sampled frames between window starts (50% overlap). Even, so the tokens of all
+# windows fall on one shared token grid.
+WINDOW_STRIDE = 16
+
+# Frames are resized to IMAGE_SIZE x IMAGE_SIZE (no crop, cv2 INTER_AREA) and
+# normalized with the ImageNet statistics.
+IMAGE_SIZE = 224
+
+IMAGENET_MEAN = (0.485, 0.456, 0.406)
+
+IMAGENET_STD = (0.229, 0.224, 0.225)
+
+# Each video token = global mean of the VideoMAE patches + a SPATIAL_GRID x
+# SPATIAL_GRID grid of patch means, concatenated.
+SPATIAL_GRID = 2
+
+# BEATs runs on the whole recording in chunks of this length; its time patches
+# (16 fbank frames of 10 ms) are interpolated at every video token's centre time.
+BEATS_CHUNK_SEC = 10.0
+
+BEATS_PATCH_SEC = 0.16
 
 LABEL2ID = {
     "no_event": 0,
@@ -52,47 +80,55 @@ SUPPORTED_PRECISIONS = frozenset({"auto", "fp32", "fp16", "bf16"})
 # =========================
 # INFERENCE HYPERPARAMETERS (tunable)
 # =========================
+# Tuned on real inference (2026-11-04): 2685 single-stroke video_capcut clips
+# (21 players, both hands) and the 115 long training videos (held-out fold
+# predictions). Against the training decoder (argmax, 3 tokens): clips with exactly
+# the right event 96.8% -> 98.4%, long-video event macro-F1 (±0.5 s) 0.951 -> 0.952.
 
-# Minimum smoothed probability for a temporal token to count as hit / miss.
-HIT_THRESHOLD = 0.8
+# A token is an event when P(event) = 1 - P(no_event) exceeds this; None (env
+# "argmax") counts a token as an event when its argmax is hit or miss.
+EVENT_THRESHOLD: float | None = 0.4
 
-MISS_THRESHOLD = 0.8
+# Shortest run of event tokens kept as an event (1 token = 1/15 s, so 8 ~= 0.53 s).
+MIN_EVENT_TOKENS = 8
 
-# Same-class events closer than this (seconds) are merged; same-class tokens
-# separated by a no_event gap of at most this length are joined.
-EVENT_MIN_GAP = 0.5
+# Moving average (in tokens) of P(event) before thresholding; 1 disables it.
+EVENT_SMOOTH_TOKENS = 1
 
-# Moving-average radius (in temporal tokens) applied before thresholding; 0 disables.
-TEMPORAL_SMOOTH_RADIUS = 1
+# Event time: the token with the highest P(event) in the run (True) or the run centre.
+EVENT_AT_PEAK = False
 
-# Overlap between consecutive sliding windows (0 <= overlap < 1).
-OVERLAP = 0.5
+
+def _env_threshold(name: str, default: float | None) -> float | None:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    value = value.strip().lower()
+    return None if value in {"", "none", "argmax"} else float(value)
 
 
 @dataclass(frozen=True)
 class InferenceParams:
-    hit_threshold: float = HIT_THRESHOLD
-    miss_threshold: float = MISS_THRESHOLD
-    event_min_gap: float = EVENT_MIN_GAP
-    smooth_radius: int = TEMPORAL_SMOOTH_RADIUS
-    overlap: float = OVERLAP
+    event_threshold: float | None = EVENT_THRESHOLD
+    min_event_tokens: int = MIN_EVENT_TOKENS
+    smooth_tokens: int = EVENT_SMOOTH_TOKENS
+    peak: bool = EVENT_AT_PEAK
 
     def __post_init__(self) -> None:
-        if not 0.0 <= self.overlap < 1.0:
-            raise ValueError("PICKLEBALL_OVERLAP must be in [0, 1)")
-        if self.smooth_radius < 0:
-            raise ValueError("PICKLEBALL_SMOOTH_RADIUS must be >= 0")
-        if self.event_min_gap < 0:
-            raise ValueError("PICKLEBALL_EVENT_MIN_GAP must be >= 0")
+        if self.event_threshold is not None and not 0.0 <= self.event_threshold < 1.0:
+            raise ValueError("PICKLEBALL_EVENT_THRESHOLD must be in [0, 1) or argmax")
+        if self.min_event_tokens < 1:
+            raise ValueError("PICKLEBALL_MIN_EVENT_TOKENS must be >= 1")
+        if self.smooth_tokens < 1:
+            raise ValueError("PICKLEBALL_EVENT_SMOOTH_TOKENS must be >= 1")
 
     @classmethod
     def from_env(cls) -> InferenceParams:
         return cls(
-            hit_threshold=float(os.getenv("PICKLEBALL_HIT_THRESHOLD", HIT_THRESHOLD)),
-            miss_threshold=float(os.getenv("PICKLEBALL_MISS_THRESHOLD", MISS_THRESHOLD)),
-            event_min_gap=float(os.getenv("PICKLEBALL_EVENT_MIN_GAP", EVENT_MIN_GAP)),
-            smooth_radius=int(os.getenv("PICKLEBALL_SMOOTH_RADIUS", TEMPORAL_SMOOTH_RADIUS)),
-            overlap=float(os.getenv("PICKLEBALL_OVERLAP", OVERLAP)),
+            event_threshold=_env_threshold("PICKLEBALL_EVENT_THRESHOLD", EVENT_THRESHOLD),
+            min_event_tokens=int(os.getenv("PICKLEBALL_MIN_EVENT_TOKENS", MIN_EVENT_TOKENS)),
+            smooth_tokens=int(os.getenv("PICKLEBALL_EVENT_SMOOTH_TOKENS", EVENT_SMOOTH_TOKENS)),
+            peak=_env_bool("PICKLEBALL_EVENT_AT_PEAK", EVENT_AT_PEAK),
         )
 
 
@@ -114,20 +150,21 @@ def _env_bool(name: str, default: bool) -> bool:
 
 @dataclass(frozen=True)
 class Settings:
-    checkpoint_path: Path = WEIGHTS_DIR / "best.pt"
+    # Fold ensemble exported by scripts/export_checkpoint.py from the v4 training run.
+    checkpoint_path: Path = WEIGHTS_DIR / "pickleball_v4.pt"
     beats_checkpoint: Path = WEIGHTS_DIR / "BEATs_iter3_plus_AS2M.pt"
     beats_root: Path = PROJECT_ROOT / "vendor" / "unilm"
     # Local directory, or a Hugging Face model id downloaded into WEIGHTS_DIR.
-    videomae: str = str(WEIGHTS_DIR / "videomae-base")
+    videomae: str = str(WEIGHTS_DIR / "videomae-base-finetuned-kinetics")
     # Hub repo whose weights are downloaded into a local ``videomae`` directory that
     # has none yet; empty disables the download (offline deployments).
-    videomae_repo: str = "MCG-NJU/videomae-base"
+    videomae_repo: str = "MCG-NJU/videomae-base-finetuned-kinetics"
     device: str = "auto"
     # Sliding windows per forward pass; 0 picks a default for the device.
     batch_size: int = 0
     precision: str = "auto"
-    # Resize/normalize frames on the GPU: ~20% faster end to end, but pixels may
-    # differ from the training-time PIL preprocessing by one 8-bit level.
+    # Resize/normalize frames on the GPU (area interpolation): faster, but pixels
+    # differ slightly from the training-time cv2 INTER_AREA resize.
     gpu_preprocess: bool = False
     # Worker processes resizing frames (exact, shared memory); 0 uses threads in
     # this process, which the GIL limits to ~150 frames/s.

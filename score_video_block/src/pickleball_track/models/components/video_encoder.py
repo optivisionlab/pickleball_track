@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import torch
+import torch.nn.functional as F
 from transformers import VideoMAEModel
 
-from ...core.config import NUM_VIDEO_FRAMES
+from ...core.config import NUM_VIDEO_FRAMES, SPATIAL_GRID
 
 
 def adapt_videomae_to_frame_count(model: VideoMAEModel, target_frames: int = NUM_VIDEO_FRAMES) -> None:
@@ -54,7 +55,11 @@ def adapt_videomae_to_frame_count(model: VideoMAEModel, target_frames: int = NUM
 
 
 class VideoEncoder:
-    """Mean-pools VideoMAE spatial tokens into one feature per tubelet."""
+    """VideoMAE tokens -> one feature per tubelet: global patch mean + 2x2 grid of patch means.
+
+    Same pooling as training: ``[mean, grid(0,0), grid(0,1), grid(1,0), grid(1,1)]``
+    concatenated, so a small ball is not averaged away with all 196 patches.
+    """
 
     def __init__(self, model: VideoMAEModel, device: torch.device, amp_dtype: torch.dtype | None = None):
         self.model = model
@@ -65,6 +70,10 @@ class VideoEncoder:
     @property
     def hidden_size(self) -> int:
         return int(self.model.config.hidden_size)
+
+    @property
+    def feature_dim(self) -> int:
+        return self.hidden_size * (1 + SPATIAL_GRID * SPATIAL_GRID)
 
     @torch.inference_mode()
     def __call__(
@@ -88,16 +97,19 @@ class VideoEncoder:
             output = self.model(pixel_values=pixel_values.to(self.device, non_blocking=True))
         tokens = output.last_hidden_state
         temporal_tokens = NUM_VIDEO_FRAMES // int(config.tubelet_size)
-        spatial_tokens = (int(config.image_size) // int(config.patch_size)) ** 2
+        side = int(config.image_size) // int(config.patch_size)
         hidden_dim = tokens.shape[-1]
-        expected_tokens = temporal_tokens * spatial_tokens
-        if tokens.shape[1] != expected_tokens:
+        if tokens.shape[1] != temporal_tokens * side * side:
             raise RuntimeError(
-                f"VideoMAE token mismatch: got {tokens.shape[1]}, expected {expected_tokens}"
+                f"VideoMAE token mismatch: got {tokens.shape[1]}, expected {temporal_tokens * side * side}"
             )
 
         # Pool in fp32 so reduced-precision activations do not lose accuracy here.
-        features = tokens.float().reshape(batch, temporal_tokens, spatial_tokens, hidden_dim).mean(dim=2)
+        grid = tokens.float().reshape(batch, temporal_tokens, side, side, hidden_dim)
+        cells = F.adaptive_avg_pool2d(
+            grid.permute(0, 1, 4, 2, 3).reshape(-1, hidden_dim, side, side), SPATIAL_GRID
+        ).reshape(batch, temporal_tokens, hidden_dim, -1).permute(0, 1, 3, 2)
+        features = torch.cat([grid.mean((2, 3)).unsqueeze(2), cells], dim=2).flatten(2)
         frames_per_token = NUM_VIDEO_FRAMES // temporal_tokens
         temporal_padding = ~frame_valid.reshape(
             batch, temporal_tokens, frames_per_token

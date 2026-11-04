@@ -3,10 +3,14 @@ from pathlib import Path
 import pytest
 
 from pickleball_track.core.config import (
+    IMAGE_SIZE,
     LABEL2ID,
     NUM_TEMPORAL_TOKENS,
     NUM_VIDEO_FRAMES,
+    SPATIAL_GRID,
+    TARGET_FPS,
     WEIGHTS_DIR,
+    WINDOW_STRIDE,
     InferenceParams,
     Settings,
 )
@@ -26,6 +30,13 @@ def test_unknown_label_id_raises():
 
 def test_temporal_constants_match_training():
     assert (NUM_VIDEO_FRAMES, NUM_TEMPORAL_TOKENS) == (32, 16)
+    assert (TARGET_FPS, WINDOW_STRIDE, IMAGE_SIZE, SPATIAL_GRID) == (30.0, 16, 224, 2)
+
+
+def test_default_decoder_is_the_tuned_one():
+    assert InferenceParams() == InferenceParams(
+        event_threshold=0.4, min_event_tokens=8, smooth_tokens=1, peak=False
+    )
 
 
 def test_default_settings_use_the_runtime_weights_directory(monkeypatch):
@@ -38,9 +49,9 @@ def test_default_settings_use_the_runtime_weights_directory(monkeypatch):
     settings = Settings.from_env()
 
     assert WEIGHTS_DIR == Path(__file__).resolve().parents[2] / "src" / "weights"
-    assert settings.checkpoint_path == WEIGHTS_DIR / "best.pt"
+    assert settings.checkpoint_path == WEIGHTS_DIR / "pickleball_v4.pt"
     assert settings.beats_checkpoint == WEIGHTS_DIR / "BEATs_iter3_plus_AS2M.pt"
-    assert Path(settings.videomae) == WEIGHTS_DIR / "videomae-base"
+    assert Path(settings.videomae) == WEIGHTS_DIR / "videomae-base-finetuned-kinetics"
     assert settings.device == "auto"
     assert (settings.batch_size, settings.precision, settings.gpu_preprocess) == (0, "auto", False)
 
@@ -74,15 +85,16 @@ def test_settings_read_environment(monkeypatch, tmp_path):
 
 
 def test_inference_hyperparameters_read_environment(monkeypatch):
-    monkeypatch.setenv("PICKLEBALL_HIT_THRESHOLD", "0.6")
-    monkeypatch.setenv("PICKLEBALL_MISS_THRESHOLD", "0.7")
-    monkeypatch.setenv("PICKLEBALL_EVENT_MIN_GAP", "0.25")
-    monkeypatch.setenv("PICKLEBALL_SMOOTH_RADIUS", "0")
-    monkeypatch.setenv("PICKLEBALL_OVERLAP", "0.75")
+    monkeypatch.setenv("PICKLEBALL_EVENT_THRESHOLD", "0.6")
+    monkeypatch.setenv("PICKLEBALL_MIN_EVENT_TOKENS", "4")
+    monkeypatch.setenv("PICKLEBALL_EVENT_SMOOTH_TOKENS", "3")
+    monkeypatch.setenv("PICKLEBALL_EVENT_AT_PEAK", "true")
 
     assert Settings.from_env().inference == InferenceParams(
-        hit_threshold=0.6, miss_threshold=0.7, event_min_gap=0.25, smooth_radius=0, overlap=0.75
+        event_threshold=0.6, min_event_tokens=4, smooth_tokens=3, peak=True
     )
+    monkeypatch.setenv("PICKLEBALL_EVENT_THRESHOLD", "argmax")
+    assert Settings.from_env().inference.event_threshold is None
 
 
 @pytest.mark.parametrize(
@@ -94,7 +106,7 @@ def test_invalid_settings_are_rejected(overrides):
 
 
 @pytest.mark.parametrize(
-    "overrides", [{"overlap": 1.0}, {"overlap": -0.1}, {"smooth_radius": -1}, {"event_min_gap": -1}]
+    "overrides", [{"event_threshold": 1.0}, {"event_threshold": -0.1}, {"min_event_tokens": 0}, {"smooth_tokens": 0}]
 )
 def test_invalid_inference_params_are_rejected(overrides):
     with pytest.raises(ValueError):
