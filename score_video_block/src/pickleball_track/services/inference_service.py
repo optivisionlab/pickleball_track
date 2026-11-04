@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from pathlib import Path
 from typing import Any
@@ -67,6 +68,8 @@ class VideoInferenceService:
         self.models = models
         self.params = params
         self.slots = slots
+        # Runs an offloaded video encoder next to the audio model (one per slot).
+        self._overlap = ThreadPoolExecutor(max_workers=slots, thread_name_prefix="video-overlap")
         self.decoder = decoder
         self.ffmpeg_threads = ffmpeg_threads
         self._extra_pools: list[ProcessFramePool] = []
@@ -98,6 +101,7 @@ class VideoInferenceService:
         for pool in self._extra_pools:
             pool.close()
         self._extra_pools = []
+        self._overlap.shutdown(wait=False)
 
     @torch.inference_mode()
     def predict_batch(
@@ -109,7 +113,16 @@ class VideoInferenceService:
     ) -> torch.Tensor:
         """Softmax probabilities (B, NUM_TEMPORAL_TOKENS, num_classes) for a batch of windows."""
         models = self.models
-        video_features, temporal_padding = models.video_encoder(batch.pixel_values, batch.frame_valid)
+        video_encoder = models.video_encoder
+        # An encoder running off the CPU (OpenVINO NPU/GPU) works while the audio model
+        # uses the CPU; on the CPU itself both would compete for the same cores.
+        video_job = (
+            self._overlap.submit(video_encoder, batch.pixel_values, batch.frame_valid)
+            if getattr(video_encoder, "offloaded", False)
+            else None
+        )
+        if video_job is None:
+            video_features, temporal_padding = video_encoder(batch.pixel_values, batch.frame_valid)
         audio = [
             get_audio_window(waveform, timeline.time(start), window_duration)
             for start in batch.starts
@@ -117,6 +130,8 @@ class VideoInferenceService:
         segments = torch.cat([segment for segment, _ in audio])
         padding_mask = torch.cat([mask for _, mask in audio])
         audio_features, audio_padding = models.audio_encoder(segments, padding_mask)
+        if video_job is not None:
+            video_features, temporal_padding = video_job.result()
         logits = models.fusion_model(
             video_features, audio_features, audio_padding, temporal_padding
         )

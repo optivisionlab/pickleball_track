@@ -185,6 +185,37 @@ Worker processes exchange frames through `/dev/shm` (~10 MB per worker for
 1080p). Docker's default 64 MB is too small: run containers with
 `--shm-size=1g`; otherwise the service logs a warning and uses threads.
 
+## CPU server with Intel NPU / iGPU (OpenVINO)
+
+On a server without an NVIDIA GPU but with an Intel Core Ultra CPU, VideoMAE (the
+slowest model) runs on the NPU and the integrated GPU through OpenVINO, while
+decoding and the audio model stay on the CPU:
+
+```bash
+docker compose -f docker-compose.openvino.yml up -d --build
+```
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `PICKLEBALL_VIDEOMAE_BACKEND` | `torch` | `openvino` runs VideoMAE on `PICKLEBALL_OPENVINO_DEVICES` |
+| `PICKLEBALL_OPENVINO_DEVICES` | `NPU,GPU` | Devices sharing each batch; each takes the next free window |
+| `PICKLEBALL_OPENVINO_GPU_PRECISION` | `f32` | `f16` is faster on the iGPU alone but changed hit counts |
+| `PICKLEBALL_OPENVINO_CACHE_DIR` | `/tmp/openvino-cache` | Compiled-model cache (mount a volume: faster restarts) |
+
+Measured on a Core Ultra 9 285 (24 cores, no NVIDIA GPU), one video at a time:
+
+| Video | PyTorch CPU (old per-window seeking) | PyTorch CPU (this branch) | OpenVINO NPU + iGPU |
+|---|---|---|---|
+| 3 s 1080p H.264 | 6-10 s | 5.6 s | 2.7 s |
+| 44 s 480p H.264 | 88 s | ~100 s | 36 s |
+| 60 s 1080p60 HEVC | 404 s | 250 s | 102 s |
+
+Hit/miss counts were identical on all test videos; per-token probabilities differ
+by at most 0.034 (the NPU computes in fp16). VideoMAE alone: PyTorch CPU ~850 ms
+per window, NPU 640 ms, iGPU f32 990 ms (f16 590 ms); adding the CPU as a third
+OpenVINO device was slower (it competes with decoding). Throughput is bound by the
+NPU + iGPU (~2.2 windows/s), so a second replica or a larger batch adds nothing.
+
 ## Run
 
 ```bash

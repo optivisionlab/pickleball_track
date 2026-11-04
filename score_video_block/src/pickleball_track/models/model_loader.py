@@ -33,6 +33,7 @@ from ..pipelines.frames import (
 from .architecture import AVFeatureModel
 from .components.audio_encoder import AudioEncoder
 from .components.video_encoder import VideoEncoder, adapt_videomae_to_frame_count
+from .components.openvino_video_encoder import OpenVINOVideoEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ class ModelBundle:
 
     device: torch.device
     processor: VideoMAEImageProcessor
-    video_encoder: VideoEncoder
+    video_encoder: VideoEncoder | OpenVINOVideoEncoder
     audio_encoder: AudioEncoder
     fusion_model: AVFeatureModel
     # Sliding windows per forward pass.
@@ -57,6 +58,8 @@ class ModelBundle:
         """Stop preprocessing workers; the bundle must not be used afterwards."""
         if self.frame_pool is not None:
             self.frame_pool.close()
+        if isinstance(self.video_encoder, OpenVINOVideoEncoder):
+            self.video_encoder.close()
 
 
 # Defaults for PICKLEBALL_BATCH_SIZE=0. 16 windows of 32 frames use ~2-3 GB on the
@@ -289,7 +292,17 @@ def load_models(settings: Settings) -> ModelBundle:
     beats = load_beats(settings.beats_root, settings.beats_checkpoint, device)
     fusion_model = load_trained_model(settings.checkpoint_path, device)
 
-    video_encoder = VideoEncoder(videomae, device, amp_dtype)
+    if settings.videomae_backend == "openvino":
+        video_encoder = OpenVINOVideoEncoder(
+            videomae,
+            settings.openvino_devices,
+            gpu_precision=settings.openvino_gpu_precision,
+            cache_dir=settings.openvino_cache_dir or None,
+        )
+        # The PyTorch copy is no longer needed once converted.
+        del videomae
+    else:
+        video_encoder = VideoEncoder(videomae, device, amp_dtype)
     audio_encoder = AudioEncoder(beats, device)
     audio_dim = _beats_feature_dim(audio_encoder)
     if fusion_model.video_proj.net[0].in_features != video_encoder.hidden_size:
@@ -313,6 +326,8 @@ def load_models(settings: Settings) -> ModelBundle:
         extra={
             "device": str(device),
             "videomae_precision": str(amp_dtype or torch.float32),
+            "videomae_backend": settings.videomae_backend,
+            "openvino_devices": getattr(video_encoder, "device_names", None),
             "batch_size": batch_size,
             "gpu_preprocessing": frame_preprocessor is not None,
             "preprocess_workers": frame_pool.workers if frame_pool else 0,
@@ -328,6 +343,7 @@ def load_models(settings: Settings) -> ModelBundle:
         frame_preprocessor=frame_preprocessor,
         frame_pool=frame_pool,
     )
-    if device.type == "cuda":
+    # Accelerators (CUDA, OpenVINO GPU/NPU) initialize lazily: pay it at startup.
+    if device.type == "cuda" or settings.videomae_backend == "openvino":
         warmup(bundle)
     return bundle

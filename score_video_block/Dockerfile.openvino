@@ -1,0 +1,73 @@
+# syntax=docker/dockerfile:1
+#
+# CPU server with Intel NPU / integrated GPU (e.g. Core Ultra): VideoMAE runs on the
+# accelerators through OpenVINO, decoding and the audio model on the CPU.
+# The base image ships the Intel GPU (OpenCL/Level Zero) and NPU user-space drivers.
+#
+#   docker build -f Dockerfile.openvino -t pickleball-track:openvino .
+#   docker run ... --device /dev/dri --device /dev/accel --group-add <render gid> ...
+
+FROM openvino/ubuntu24_runtime:2025.3.0
+
+USER root
+WORKDIR /app
+
+# ffmpeg/ffprobe decode audio; glib is needed by opencv-python-headless.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ffmpeg \
+        libglib2.0-0 \
+        python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG TORCH_INDEX=https://download.pytorch.org/whl/cpu
+ARG TORCH_VERSION=2.10.0
+ARG TORCHVISION_VERSION=0.25.0
+ARG TORCHAUDIO_VERSION=2.10.0
+ARG OPENVINO_VERSION=2025.3.0
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python3 -m venv /opt/venv \
+    && /opt/venv/bin/pip install \
+        torch==${TORCH_VERSION} torchvision==${TORCHVISION_VERSION} torchaudio==${TORCHAUDIO_VERSION} \
+        --index-url ${TORCH_INDEX}
+
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache/pip \
+    /opt/venv/bin/pip install -r requirements.txt openvino==${OPENVINO_VERSION}
+
+COPY --chown=openvino:openvino vendor/ ./vendor/
+COPY --chown=openvino:openvino src/ ./src/
+
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONPATH=/app/src \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    HF_HOME=/tmp/huggingface \
+    PICKLEBALL_DEVICE=cpu \
+    PICKLEBALL_VIDEOMAE_BACKEND=openvino \
+    PICKLEBALL_OPENVINO_CACHE_DIR=/app/ov-cache \
+    PICKLEBALL_CHECKPOINT=/app/src/weights/best.pt \
+    PICKLEBALL_BEATS_CHECKPOINT=/app/src/weights/BEATs_iter3_plus_AS2M.pt \
+    PICKLEBALL_BEATS_ROOT=/app/vendor/unilm \
+    PICKLEBALL_VIDEOMAE=/app/src/weights/videomae-base
+
+# Compiled-model cache (mount a volume here to keep NPU/GPU compilation across restarts).
+RUN mkdir -p /app/ov-cache && chown openvino:openvino /app/ov-cache
+
+USER openvino
+
+EXPOSE 8888
+
+# Startup converts VideoMAE, compiles it for the NPU/GPU (minutes the first time,
+# seconds with a warm cache) and warms the models up.
+HEALTHCHECK \
+    --interval=30s \
+    --timeout=10s \
+    --start-period=600s \
+    --retries=3 \
+    CMD python -c \
+    "import urllib.request; urllib.request.urlopen('http://localhost:8888/ready', timeout=5)" \
+    || exit 1
+
+CMD ["uvicorn", "pickleball_track.api.main:app", "--host", "0.0.0.0", "--port", "8888", "--workers", "1"]

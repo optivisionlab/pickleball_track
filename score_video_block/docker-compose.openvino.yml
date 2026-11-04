@@ -1,0 +1,53 @@
+# CPU server with an Intel NPU + integrated GPU (Core Ultra), no NVIDIA GPU:
+#   docker compose -f docker-compose.openvino.yml up -d --build
+#
+# One model server: VideoMAE runs on the NPU and the iGPU through OpenVINO (each takes
+# the next window, ~2.2 windows/s together on a Core Ultra 9 285), decoding and the
+# audio model on the CPU. Extra replicas would share the same NPU/iGPU and add nothing.
+# Measured: 60 s 1080p60 HEVC video 102 s (PyTorch on the CPU: 250 s), 3 s clip 2.7 s.
+name: pickleball-ai
+
+services:
+  pickleball-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile.openvino
+    image: pickleball-track:openvino
+    container_name: score_service_container
+    env_file: .env
+    environment:
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-100.116.40.89:9000}
+      PICKLEBALL_DEVICE: cpu
+      PICKLEBALL_VIDEOMAE_BACKEND: openvino
+      PICKLEBALL_OPENVINO_DEVICES: ${PICKLEBALL_OPENVINO_DEVICES:-NPU,GPU}
+      # f32 on the iGPU keeps hit/miss counts identical to PyTorch; f16 changed them.
+      PICKLEBALL_OPENVINO_GPU_PRECISION: ${PICKLEBALL_OPENVINO_GPU_PRECISION:-f32}
+      PICKLEBALL_BATCH_SIZE: ${PICKLEBALL_BATCH_SIZE:-8}
+      # opencv = frames exactly as in training (ffmpeg is faster but changes HDR colours).
+      PICKLEBALL_DECODER: ${PICKLEBALL_DECODER:-opencv}
+      PICKLEBALL_PREPROCESS_WORKERS: ${PICKLEBALL_PREPROCESS_WORKERS:-8}
+      # One slot for long videos, one kept for clips <= 20 s so they never wait behind them.
+      PICKLEBALL_INFERENCE_SLOTS: ${PICKLEBALL_INFERENCE_SLOTS:-2}
+      PICKLEBALL_RESERVED_SHORT_SLOTS: ${PICKLEBALL_RESERVED_SHORT_SLOTS:-1}
+      PICKLEBALL_MAX_PENDING_JOBS: ${PICKLEBALL_MAX_PENDING_JOBS:-16}
+      PICKLEBALL_VIDEOMAE_REPO: ""
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/accel:/dev/accel
+    # Host groups owning /dev/dri/renderD128 and /dev/accel/accel0 (getent group render video).
+    group_add:
+      - "${RENDER_GID:-992}"
+      - "${VIDEO_GID:-44}"
+    volumes:
+      - ${PICKLEBALL_WEIGHTS_DIR:-./src/weights}:/app/src/weights:ro
+      # NPU/iGPU compiled models: restarts take ~15 s instead of ~1 min.
+      - ov-cache:/app/ov-cache
+    shm_size: 2gb
+    ports:
+      - "8888:8888"
+    restart: unless-stopped
+
+volumes:
+  ov-cache:
+    name: pickleball-ov-cache
+    external: false

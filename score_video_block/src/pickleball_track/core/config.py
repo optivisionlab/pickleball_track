@@ -48,6 +48,10 @@ SUPPORTED_DECODERS = frozenset({"opencv", "ffmpeg"})
 # model always run in fp32 (BEATs' fbank overflows fp16).
 SUPPORTED_PRECISIONS = frozenset({"auto", "fp32", "fp16", "bf16"})
 
+SUPPORTED_VIDEOMAE_BACKENDS = frozenset({"torch", "openvino"})
+
+SUPPORTED_OPENVINO_GPU_PRECISIONS = frozenset({"f32", "f16"})
+
 
 # =========================
 # INFERENCE HYPERPARAMETERS (tunable)
@@ -126,6 +130,16 @@ class Settings:
     # Sliding windows per forward pass; 0 picks a default for the device.
     batch_size: int = 0
     precision: str = "auto"
+    # "torch" runs VideoMAE on ``device``; "openvino" runs it on Intel accelerators
+    # (``openvino_devices``, e.g. the NPU and integrated GPU of a CPU-only server), which
+    # frees the CPU for decoding and the audio model.
+    videomae_backend: str = "torch"
+    # OpenVINO devices sharing the windows of every batch (each takes the next free one).
+    openvino_devices: tuple[str, ...] = ("NPU", "GPU")
+    # f32 matches PyTorch; f16 is ~1.7x faster on the iGPU but features drift more.
+    openvino_gpu_precision: str = "f32"
+    # Compiled-model cache: the NPU compiles for minutes without it.
+    openvino_cache_dir: str = "/tmp/openvino-cache"
     # Resize/normalize frames on the GPU: ~20% faster end to end, but pixels may
     # differ from the training-time PIL preprocessing by one 8-bit level.
     gpu_preprocess: bool = False
@@ -183,6 +197,12 @@ class Settings:
             raise ValueError("PICKLEBALL_PREPROCESS_WORKERS must be >= 0")
         if self.precision not in SUPPORTED_PRECISIONS:
             raise ValueError("PICKLEBALL_PRECISION must be auto, fp32, fp16, or bf16")
+        if self.videomae_backend not in SUPPORTED_VIDEOMAE_BACKENDS:
+            raise ValueError("PICKLEBALL_VIDEOMAE_BACKEND must be torch or openvino")
+        if self.videomae_backend == "openvino" and not self.openvino_devices:
+            raise ValueError("PICKLEBALL_OPENVINO_DEVICES must list at least one device")
+        if self.openvino_gpu_precision not in SUPPORTED_OPENVINO_GPU_PRECISIONS:
+            raise ValueError("PICKLEBALL_OPENVINO_GPU_PRECISION must be f32 or f16")
         if self.inference_slots < 1:
             raise ValueError("PICKLEBALL_INFERENCE_SLOTS must be >= 1")
         if self.max_pending_jobs < self.inference_slots:
@@ -220,6 +240,20 @@ class Settings:
             device=os.getenv("PICKLEBALL_DEVICE", defaults.device).strip().lower(),
             batch_size=int(os.getenv("PICKLEBALL_BATCH_SIZE", str(defaults.batch_size))),
             precision=os.getenv("PICKLEBALL_PRECISION", defaults.precision).strip().lower(),
+            videomae_backend=os.getenv(
+                "PICKLEBALL_VIDEOMAE_BACKEND", defaults.videomae_backend
+            ).strip().lower(),
+            openvino_devices=tuple(
+                device.strip().upper()
+                for device in os.getenv(
+                    "PICKLEBALL_OPENVINO_DEVICES", ",".join(defaults.openvino_devices)
+                ).split(",")
+                if device.strip()
+            ),
+            openvino_gpu_precision=os.getenv(
+                "PICKLEBALL_OPENVINO_GPU_PRECISION", defaults.openvino_gpu_precision
+            ).strip().lower(),
+            openvino_cache_dir=os.getenv("PICKLEBALL_OPENVINO_CACHE_DIR", defaults.openvino_cache_dir).strip(),
             gpu_preprocess=_env_bool("PICKLEBALL_GPU_PREPROCESS", defaults.gpu_preprocess),
             preprocess_workers=int(
                 os.getenv("PICKLEBALL_PREPROCESS_WORKERS", str(defaults.preprocess_workers))
