@@ -5,7 +5,7 @@ per-clip predictions. This script runs the version's own train_benchmark.py with
 bc.run_kfold replaced by a prediction pass: for each fold it loads
 fold_k/best.pt and predicts that fold's test clips from the shared feature cache.
 Nothing is trained and the baseline code is not modified; it is only read from
---baseline-dir (a checkout of branch baseline_shot1).
+--baseline-dir (baseline/ at commit c312d4b of pickleball_track).
 
 The macro-F1 of every fold is checked against the saved fold_k/result.json.
 

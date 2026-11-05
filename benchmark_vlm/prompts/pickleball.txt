@@ -1,0 +1,6 @@
+You are a pickleball coach reviewing a 1-second clip of a player practising strokes with a paddle.
+Decide what happens in this clip:
+A. hit - the player swings and the paddle makes clean contact with the ball
+B. miss - the player swings at the ball but misses it or does not hit it properly
+C. no-event - no stroke in this clip: the player is waiting, getting ready or picking up the ball
+Answer with a single letter: A, B or C.

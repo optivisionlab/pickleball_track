@@ -1,0 +1,341 @@
+{
+  "n_clips": 10679,
+  "n_games": 471,
+  "outcome_counts": {
+    "off_target": 4946,
+    "saved": 4050,
+    "goal": 1683
+  },
+  "split_counts": {
+    "train": 6402,
+    "test": 2241,
+    "valid": 2036
+  },
+  "league_counts": {
+    "La Liga": 2758,
+    "Serie A": 2368,
+    "Champions League": 2183,
+    "Premier League": 2045,
+    "Bundesliga": 1149,
+    "Ligue 1": 176
+  },
+  "goal_rate_by_league": {
+    "Bundesliga": 0.154,
+    "Champions League": 0.1663,
+    "La Liga": 0.1733,
+    "Ligue 1": 0.1875,
+    "Premier League": 0.1487,
+    "Serie A": 0.1385
+  },
+  "shots_by_half": {
+    "2": 5662,
+    "1": 5017
+  },
+  "shots_per_game": {
+    "count": 471.0,
+    "mean": 22.67,
+    "std": 5.96,
+    "min": 5.0,
+    "25%": 18.0,
+    "50%": 23.0,
+    "75%": 27.0,
+    "max": 43.0
+  },
+  "goal_label_vs_score": {
+    "equal": 369,
+    "fewer_labels": 4,
+    "more_labels": 98,
+    "missing_goals_total": 6,
+    "score_goals_total": 1551
+  },
+  "quality": {
+    "pairs_gap_lt_10s": 485,
+    "clips_overlapping_neighbor": 950,
+    "goal_after_goal_lt_5s": 125,
+    "goal_after_goal_lt_5s_by_split": {
+      "train": 68,
+      "test": 29,
+      "valid": 28
+    },
+    "games_more_goal_labels_than_score": 97,
+    "games_fewer_goal_labels_than_score": 4,
+    "excluded_wrong_score_games": [
+      387
+    ],
+    "goal_diff_hist": {
+      "-3": 1,
+      "-1": 3,
+      "0": 369,
+      "1": 74,
+      "2": 19,
+      "3": 2,
+      "4": 1,
+      "5": 1
+    },
+    "dup_goal_examples": [
+      {
+        "path": "clips/train/0006_1_1694276.mp4",
+        "game_time": "1 - 28:14",
+        "gap_prev_goal": 1.459,
+        "caption": "Asmir Begovic makes a superb save to deny a header which was nodded towards the bottom left corner by Bafetimbi Gomis (Swansea)."
+      },
+      {
+        "path": "clips/train/0006_1_1696307.mp4",
+        "game_time": "1 - 28:16",
+        "gap_prev_goal": 2.031,
+        "caption": "Asmir Begovic makes a superb save to deny a header which was nodded towards the bottom left corner by Bafetimbi Gomis (Swansea)."
+      },
+      {
+        "path": "clips/train/0014_2_2672985.mp4",
+        "game_time": "2 - 44:32",
+        "gap_prev_goal": 1.76,
+        "caption": "Samir Nasri (Manchester City) drills a low shot from the edge of the box after a brilliant solo effort. The ball heads towards the left post, but the goalkeeper denies him with a fantastic save."
+      },
+      {
+        "path": "clips/test/0016_1_749476.mp4",
+        "game_time": "1 - 12:29",
+        "gap_prev_goal": 1.432,
+        "caption": "Sadio Mane (Southampton) latches on to a precise lofted cross inside the box, controls the ball and unleashes a fine strike towards the middle of the goal. His dangerous effort is blocked by David de Gea, who makes a glorious save!"
+      },
+      {
+        "path": "clips/train/0034_2_784217.mp4",
+        "game_time": "2 - 13:04",
+        "gap_prev_goal": 1.394,
+        "caption": "Adam Johnson (Sunderland) takes the corner and sends it into the penalty area, but the opposition's defence is ready and makes a good clearance."
+      },
+      {
+        "path": "clips/train/0061_2_2224157.mp4",
+        "game_time": "2 - 37:04",
+        "gap_prev_goal": 3.49,
+        "caption": "Eldin Jakupovic pulls off a great save to deny Theo Walcott (Arsenal), who makes himself some space inside the box and unleashes a quick shot towards the middle of the goal."
+      },
+      {
+        "path": "clips/valid/0064_2_521761.mp4",
+        "game_time": "2 - 08:41",
+        "gap_prev_goal": 3.948,
+        "caption": ""
+      },
+      {
+        "path": "clips/train/0073_2_2706442.mp4",
+        "game_time": "2 - 45:06",
+        "gap_prev_goal": 2.04,
+        "caption": "Daniel Sturridge (Liverpool) shoots from the edge of the penalty area. The ball travels towards the left side of the target, but Costel Pantilimon easily deals with the threat."
+      },
+      {
+        "path": "clips/valid/0077_2_2858478.mp4",
+        "game_time": "2 - 47:38",
+        "gap_prev_goal": 1.675,
+        "caption": "Steve Cook (Bournemouth) shoots from the edge of the penalty area. The ball travels low towards the middle of the target, but Loris Karius easily deals with the threat."
+      },
+      {
+        "path": "clips/valid/0077_2_2859513.mp4",
+        "game_time": "2 - 47:39",
+        "gap_prev_goal": 1.035,
+        "caption": "Steve Cook (Bournemouth) shoots from the edge of the penalty area. The ball travels low towards the middle of the target, but Loris Karius easily deals with the threat."
+      }
+    ]
+  },
+  "caption_coverage": {
+    "goal": 81.16,
+    "saved": 80.47,
+    "off_target": 79.07
+  },
+  "caption_offset_median": 11.9,
+  "caption_offset_q": {
+    "0.1": 2.0,
+    "0.25": 5.1,
+    "0.75": 24.0,
+    "0.9": 38.5
+  },
+  "caption_words_median": {
+    "goal": 30.0,
+    "saved": 31.0,
+    "off_target": 26.0
+  },
+  "keyword_pct": {
+    "goal": {
+      "Goal! / tỉ số": 60.6,
+      "save / keeper": 23.0,
+      "wide / over / miss": 1.6,
+      "blocked": 3.0,
+      "post / bar": 14.7,
+      "corner (phạt góc)": 6.8,
+      "substitution": 1.5,
+      "foul / card": 0.9,
+      "offside": 0.3
+    },
+    "saved": {
+      "Goal! / tỉ số": 1.0,
+      "save / keeper": 41.0,
+      "wide / over / miss": 4.5,
+      "blocked": 19.2,
+      "post / bar": 10.9,
+      "corner (phạt góc)": 30.3,
+      "substitution": 1.3,
+      "foul / card": 2.6,
+      "offside": 1.8
+    },
+    "off_target": {
+      "Goal! / tỉ số": 1.2,
+      "save / keeper": 10.5,
+      "wide / over / miss": 50.7,
+      "blocked": 8.7,
+      "post / bar": 40.7,
+      "corner (phạt góc)": 20.8,
+      "substitution": 2.4,
+      "foul / card": 1.9,
+      "offside": 1.4
+    }
+  },
+  "rule": {
+    "coverage_of_all": 0.4636,
+    "acc_3class_on_decided": 0.8249,
+    "acc_hitmiss_on_decided": 0.9398,
+    "goal_recall": 0.492,
+    "goal_precision": 0.9119,
+    "hit_f1_all_clips": 0.6391,
+    "hit_f1_train": 0.6394,
+    "hit_f1_valid": 0.6655,
+    "hit_f1_test": 0.6108
+  },
+  "probe": {
+    "probe_failed": 0,
+    "files_on_disk": 10706,
+    "extra_files_not_in_manifest": 27,
+    "missing_files": 0,
+    "vcodec": {
+      "hevc": 10679
+    },
+    "acodec": {
+      "aac": 10677
+    },
+    "resolution": {
+      "1280×720": 6512,
+      "1920×1080": 4036,
+      "854×480": 51,
+      "1366×768": 28,
+      "1440×1080": 27,
+      "704×576": 25
+    },
+    "fps": {
+      "25.0": 7856,
+      "50.0": 2392,
+      "29.97": 303,
+      "58.82": 42,
+      "59.94": 29,
+      "30.0": 23,
+      "24.99": 23,
+      "25.01": 11
+    },
+    "duration": {
+      "count": 10679.0,
+      "mean": 10.0,
+      "std": 0.08,
+      "min": 2.93,
+      "25%": 10.0,
+      "50%": 10.0,
+      "75%": 10.0,
+      "max": 10.04
+    },
+    "duration_not_10s": 2,
+    "nb_frames": {
+      "count": 10679.0,
+      "mean": 309.8,
+      "std": 106.3,
+      "min": 68.0,
+      "25%": 250.0,
+      "50%": 250.0,
+      "75%": 300.0,
+      "max": 600.0
+    },
+    "sample_rate": {
+      "48000.0": 10046,
+      "44100.0": 607,
+      "22050.0": 24
+    },
+    "channels": {
+      "2.0": 9795,
+      "6.0": 882
+    },
+    "no_audio": 2,
+    "v_kbps_by_res": {
+      "1280×720": 2074.0,
+      "1366×768": 1992.0,
+      "1440×1080": 3425.0,
+      "1920×1080": 4583.0,
+      "704×576": 1066.0,
+      "854×480": 953.0
+    },
+    "size_mb": {
+      "count": 10679.0,
+      "mean": 4.2,
+      "std": 1.73,
+      "min": 0.51,
+      "25%": 2.59,
+      "50%": 4.06,
+      "75%": 5.6,
+      "max": 15.05
+    },
+    "size_total_gb": 44.81,
+    "v_kbps_by_outcome": {
+      "goal": 3319.0,
+      "off_target": 3065.0,
+      "saved": 3103.0
+    }
+  },
+  "content": {
+    "n_per_outcome": 300,
+    "auc_goal_vs_miss": {
+      "Số lần cắt cảnh sau sút": 0.554,
+      "Số lần cắt cảnh trước sút": 0.494,
+      "Tỉ lệ cỏ sau sút (%)": 0.393,
+      "Tỉ lệ cỏ trước sút (%)": 0.459,
+      "Độ ồn sau sút (dB so với nền)": 0.675,
+      "Độ ồn trước sút (dB so với nền)": 0.556,
+      "Chuyển động sau sút": 0.627,
+      "Chuyển động trước sút": 0.535
+    },
+    "median_by_outcome": {
+      "Số lần cắt cảnh sau sút": {
+        "goal": 0.0,
+        "off_target": 0.0,
+        "saved": 0.0
+      },
+      "Số lần cắt cảnh trước sút": {
+        "goal": 0.0,
+        "off_target": 0.0,
+        "saved": 0.0
+      },
+      "Tỉ lệ cỏ sau sút (%)": {
+        "goal": 55.82,
+        "off_target": 59.12,
+        "saved": 62.4
+      },
+      "Tỉ lệ cỏ trước sút (%)": {
+        "goal": 69.01,
+        "off_target": 71.04,
+        "saved": 71.65
+      },
+      "Độ ồn sau sút (dB so với nền)": {
+        "goal": 2.6,
+        "off_target": 1.02,
+        "saved": 0.98
+      },
+      "Độ ồn trước sút (dB so với nền)": {
+        "goal": 0.72,
+        "off_target": 0.44,
+        "saved": 0.61
+      },
+      "Chuyển động sau sút": {
+        "goal": 4.69,
+        "off_target": 3.79,
+        "saved": 3.77
+      },
+      "Chuyển động trước sút": {
+        "goal": 2.68,
+        "off_target": 2.49,
+        "saved": 2.57
+      }
+    }
+  }
+}

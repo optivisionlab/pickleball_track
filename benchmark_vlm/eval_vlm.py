@@ -362,7 +362,7 @@ def summary(args):
     lines = ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
     lines += ["| " + " | ".join("" if pd.isna(v) else str(v) for v in r) + " |" for r in table.values]
     with open(args.out + ".md", "w") as f:
-        f.write("# Zero-shot VLM vs custom model, NSVA test (5 folds, %d clips)\n\n" % len(gt))
+        f.write("# Zero-shot VLM vs custom model, %s test (5 folds, %d clips)\n\n" % (args.title, len(gt)))
         f.write("\n".join(lines) + "\n")
     print("\n".join(lines))
     print(f"wrote {args.out}.csv and {args.out}.md")
@@ -403,5 +403,6 @@ if __name__ == "__main__":
     s.add_argument("--custom-dir", default=".", help="folder with custom_preds_v3/v4/v5.csv")
     s.add_argument("--out", default="runs/model_comparison", help="writes OUT.csv and OUT.md")
     s.add_argument("--n-boot", type=int, default=1000)
+    s.add_argument("--title", default="NSVA", help="dataset name in the table title")
     a = ap.parse_args()
     {"run": run, "compare": compare, "summary": summary}[a.cmd](a)

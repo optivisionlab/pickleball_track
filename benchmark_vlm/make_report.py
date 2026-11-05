@@ -10,7 +10,7 @@
     8329 per-clip predictions (custom_preds_v*.csv, exported from the same best.pt).
 
 Run in the env used to train the custom models (needs torch + transformers 4.x):
-    /data/miniconda/envs/anything/bin/python make_report.py --baseline-dir <baseline/ of branch baseline_shot1>
+    /data/miniconda/envs/anything/bin/python make_report.py --baseline-dir <baseline/ at commit c312d4b of pickleball_track>
 """
 import argparse
 import datetime
@@ -32,7 +32,9 @@ CUSTOM = {   # version -> (head class, pretrained encoders used at inference)
     "v4": ("AVTFeatureModel", ["videomae", "beats", "clip_text"]),
     "v5": ("VideoTextFeatureModel", ["videomae", "clip_text"]),
 }
-ARTIFACTS = "/data/Cuong/pickleball/artifacts"
+BASELINE_DIR = "/data/Cuong/pickleball/pickleball_track/baseline"  # branch training_model_custom (outputs of the custom models)
+# BEATs_iter3_plus_AS2M parameter count (fixed; the checkpoint lives with the baseline code, not here).
+BEATS_PARAMS = 90_311_792
 HF_HUB = os.path.join(os.environ.get("HF_HOME", "/data/prism/huggingface_cache"), "hub")
 
 
@@ -78,9 +80,8 @@ def custom_params(baseline, weights):
     from transformers import CLIPTextModel
 
     cpu = torch.device("cpu")
-    enc = {"videomae": n_params(bc.load_videomae(os.path.join(ARTIFACTS, "weights/videomae-base"), cpu)),
-           "beats": n_params(bc.load_beats(os.path.join(ARTIFACTS, "weights/BEATs_iter3_plus_AS2M.pt"),
-                                           os.path.join(ARTIFACTS, "unilm"), cpu)),
+    enc = {"videomae": n_params(bc.load_videomae("MCG-NJU/videomae-base", cpu)),
+           "beats": BEATS_PARAMS,
            "clip_text": n_params(CLIPTextModel.from_pretrained("openai/clip-vit-base-patch32"))}
     out = {}
     for v, (cls_name, used) in CUSTOM.items():
@@ -132,8 +133,8 @@ def main():
     here = os.path.dirname(os.path.abspath(__file__))
     ap = argparse.ArgumentParser()
     ap.add_argument("--baseline-dir", default="/data/Cuong/pickleball/pickleball_track/baseline",
-                    help="baseline/ folder of branch baseline_shot1 (git archive works)")
-    ap.add_argument("--weights", default=os.path.join(ARTIFACTS, "weights_basketball"))
+                    help="baseline/ folder at commit c312d4b of pickleball_track (git archive works)")
+    ap.add_argument("--weights", default=os.path.join(BASELINE_DIR, "basketball/outputs/runs/seed_42"))
     ap.add_argument("--runs", default=os.path.join(here, "runs"))
     ap.add_argument("--test-csv", default=os.path.join(here, "splits/test.csv"))
     ap.add_argument("--exclude", default="minicpm-v-4.5,ref_sequential_16f_448")

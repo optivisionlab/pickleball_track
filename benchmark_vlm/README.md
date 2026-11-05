@@ -11,11 +11,13 @@ STAGES=smoke ./run_models.sh            # chỉ chạy thử 10 clip mỗi model
 Kết quả so sánh: **`runs/comparison.md`** (một file duy nhất). Tạo lại sau khi có model mới hoặc custom model được train lại:
 
 ```bash
-git -C ../../pickleball_track archive baseline_shot1 baseline | tar -x -C /tmp/bs1   # code baseline_shot1
+git -C ../../pickleball_track archive c312d4b baseline | tar -x -C /tmp/bs1   # baseline code at commit c312d4b
 /data/miniconda/envs/anything/bin/python make_report.py --baseline-dir /tmp/bs1/baseline
 ```
 
 (`run_models.sh` vẫn tự ghi `runs/model_comparison.md` sau mỗi model như bảng tạm.)
+
+Lưu ý: `runs/comparison.md` dùng model custom NSVA train ngày 2026-10-21 (pipeline v1). Checkpoint của bản đó không còn được giữ; nhánh `training_model_custom` chỉ giữ cấu hình tốt nhất hiện tại (`baseline/basketball/outputs/runs/seed_<s>`), nên muốn so sánh lại phải export dự đoán của model mới bằng `export_custom_preds.py`.
 
 ## Model
 
@@ -58,7 +60,7 @@ Danh sách, batch size và VRAM cần cho từng model nằm ở đầu `run_mod
 
 ## Chia dữ liệu (giống hệt custom model v3/v4/v5)
 
-`make_splits.py` chép lại logic của `baseline/benchmark_common.py` (nhánh `baseline_shot1`):
+`make_splits.py` chép lại logic của `baseline/benchmark_common.py` (commit `c312d4b` của `pickleball_track`):
 
 - 8329 clip sạch của file mapping 1-1, 96 trận.
 - 5 fold `StratifiedGroupKFold` theo `game_id`, seed 42 → mỗi fold có tập **test** riêng; 5 tập test ghép lại = toàn bộ 8329 clip (`splits/test.csv`, có cột `fold`).
@@ -77,7 +79,7 @@ Danh sách, batch size và VRAM cần cho từng model nằm ở đầu `run_mod
 `export_custom_preds.py` xuất dự đoán từng clip của v3/v4/v5 từ `best.pt` mỗi fold (dùng cho McNemar). **Phải chạy lại sau mỗi lần train lại custom model**, nếu không so sánh sẽ dùng dự đoán cũ:
 
 ```bash
-for v in v3 v4 v5; do python export_custom_preds.py --baseline-dir /tmp/bs1/baseline --version $v --out custom_preds_$v.csv --output-dir /data/Cuong/pickleball/artifacts/weights_basketball/$v; done
+for v in v3 v4 v5; do python export_custom_preds.py --baseline-dir /tmp/bs1/baseline --version $v --out custom_preds_$v.csv --output-dir <thư mục fold_k/best.pt của model custom>/$v; done
 ```
 
 Lưu ý khi đọc kết quả: clip của `val_fold1` nằm trong tập test của fold 2–5. Model không được train, chỉ chọn 1 trong 3 cấu hình, nên ảnh hưởng nhỏ; con số sạch hoàn toàn là cột `fold1_f1`.

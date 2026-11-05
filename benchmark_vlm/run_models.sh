@@ -50,8 +50,15 @@ STAGES="${STAGES:-batch smoke val test compare}"
 WORKERS="${WORKERS:-16}"
 BATCH_SCALE="${BATCH_SCALE:-1}"
 BASELINE_DIR="${BASELINE_DIR:-/data/Cuong/pickleball/pickleball_track/baseline}"
-VAL_CSV=splits/val_fold1.csv
-mkdir -p runs logs
+# Dataset: NSVA by default; run_benchmark_pickleball.sh overrides these.
+RUNS="${RUNS:-runs}"                 # runs/<name>/ per model
+LOGS="${LOGS:-logs}"                 # logs/<name>.log
+SPLITS="${SPLITS:-splits}"           # test.csv + val_fold1.csv
+CUSTOM_DIR="${CUSTOM_DIR:-.}"        # custom_preds_v3/v4/v5.csv
+PROMPT_FILE="${PROMPT_FILE:-}"       # empty = the NSVA prompt in eval_vlm.py
+TITLE="${TITLE:-NSVA}"
+VAL_CSV="$SPLITS/val_fold1.csv"
+mkdir -p "$RUNS" "$LOGS"
 
 has() { [[ " $STAGES " == *" $1 "* ]]; }
 
@@ -66,18 +73,24 @@ wait_for_vram() {   # $1 = GB needed
 }
 
 # shared inputs: splits and per-clip predictions of the custom model
-[[ -f splits/test.csv ]] || python make_splits.py --out splits || exit 1
-for v in v3 v4 v5; do
-    [[ -f "custom_preds_$v.csv" ]] || python export_custom_preds.py --baseline-dir "$BASELINE_DIR" \
-        --version "$v" --out "custom_preds_$v.csv" || echo "custom $v predictions not exported" >&2
-done
+if [[ "$SPLITS" == splits ]]; then          # NSVA (pickleball: built by run_benchmark_pickleball.sh)
+    [[ -f splits/test.csv ]] || python make_splits.py --out splits || exit 1
+    for v in v3 v4 v5; do
+        [[ -f "custom_preds_$v.csv" ]] || python export_custom_preds.py --baseline-dir "$BASELINE_DIR" \
+            --version "$v" --out "custom_preds_$v.csv" || echo "custom $v predictions not exported" >&2
+    done
+fi
+[[ -f "$SPLITS/test.csv" ]] || { echo "missing $SPLITS/test.csv" >&2; exit 1; }
+PROMPT_ARGS=()
+[[ -n "$PROMPT_FILE" ]] && PROMPT_ARGS=(--prompt-file "$PROMPT_FILE")
 
-summarize() { python eval_vlm.py summary --runs runs --out runs/model_comparison > logs/summary.log 2>&1; }
+summarize() { python eval_vlm.py summary --csv "$SPLITS/test.csv" --runs "$RUNS" --custom-dir "$CUSTOM_DIR" \
+    --title "$TITLE" --out "$RUNS/model_comparison" > "$LOGS/summary.log" 2>&1; }
 
 run_model() {   # name id group batch need extra env device
     local name=$1 id=$2 group=$3 batch=$4 need=$5 extra=$6 env=${7:-score-video} device=${8:-}
     local PY="/data/miniconda/envs/$env/bin/python"
-    local dir="runs/$name" log="logs/$name.log"
+    local dir="$RUNS/$name" log="$LOGS/$name.log"
     if [[ "${FORCE:-0}" != 1 && -f "$dir/STATUS" && "$(cat "$dir/STATUS")" == done ]]; then
         echo "== $name: already done, skipped"; return 0
     fi
@@ -119,7 +132,7 @@ run_model() {   # name id group batch need extra env device
     printf '{"model_id": "%s", "group": "%s", "batch_by_config": %s, "extra_args": "%s", "env": "%s", "device": "%s"}\n' \
         "$id" "$group" "$bjson" "$extra" "$env" "${device:-cuda}" > "$dir/model.json"
     # shellcheck disable=SC2206
-    local args=(--model "$id" --workers "$workers" --device "${device:-cuda}" $extra)
+    local args=(--model "$id" --workers "$workers" --device "${device:-cuda}" $extra "${PROMPT_ARGS[@]}")
 
     if has smoke; then
         local sb; sb=$(batch_for 16f_448); (( sb > 0 )) || sb=1   # smoke uses the 16f/448 default
@@ -179,7 +192,7 @@ EOF
         IFS=: read -r cname nf mp < "$dir/best_config.txt"
         local tb; tb=$(batch_for "${cname#val_}"); (( tb > 0 )) || tb=1
         echo "  test with $cname (batch $tb)" | tee -a "$log"
-        "$PY" eval_vlm.py run --csv splits/test.csv --out "$dir/test_final" "${args[@]}" --batch-size "$tb" \
+        "$PY" eval_vlm.py run --csv "$SPLITS/test.csv" --out "$dir/test_final" "${args[@]}" --batch-size "$tb" \
             --num-frames "$nf" --max-pixels "$mp" --resume >> "$log" 2>&1
         if [[ $? -ne 0 || ! -f "$dir/test_final/metrics.json" ]]; then
             echo "failed: test (resume with ./run_models.sh $name)" > "$dir/STATUS"; echo "  test FAILED"; return 1
@@ -188,8 +201,8 @@ EOF
 
     if has compare && [[ -f "$dir/test_final/predictions.csv" ]]; then
         for v in v3 v4 v5; do
-            [[ -f "custom_preds_$v.csv" ]] && python eval_vlm.py compare --csv splits/test.csv \
-                --vlm "$dir/test_final/predictions.csv" --custom "custom_preds_$v.csv" >> "$log" 2>&1
+            [[ -f "$CUSTOM_DIR/custom_preds_$v.csv" ]] && python eval_vlm.py compare --csv "$SPLITS/test.csv" \
+                --vlm "$dir/test_final/predictions.csv" --custom "$CUSTOM_DIR/custom_preds_$v.csv" >> "$log" 2>&1
         done
     fi
     if has test; then echo done > "$dir/STATUS"; else echo "partial: $STAGES" > "$dir/STATUS"; fi
@@ -204,7 +217,7 @@ for entry in "${MODELS[@]}"; do
     run_model "$name" "$id" "$group" "$batch" "$need" "$extra" "$env" "$device"
 done
 summarize
-echo "comparison: runs/model_comparison.md"
-cat runs/model_comparison.md
+echo "comparison: $RUNS/model_comparison.md"
+cat "$RUNS/model_comparison.md"
 exit
 }

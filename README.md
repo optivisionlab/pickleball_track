@@ -1,14 +1,12 @@
-# Pickleball Track
+# Pickleball Track: VLM benchmark (branch `llm_benchmark`)
 
 | Folder | Content |
 | --- | --- |
-| [`score_video_block/`](score_video_block/README.md) | FastAPI service scoring pickleball videos (hit/miss detection), Dockerfile, tests |
+| [`benchmark_vlm/`](benchmark_vlm/README.md) | zero-shot VLMs (Qwen3-VL, Qwen3.5, InternVL3.5, MiniCPM-V, Gemma 4) on NSVA basketball and pickleball, compared with the custom v3 / v4 / v5 models |
 
-Each block is self-contained: install, test and build Docker images from inside its folder, e.g.
+Other parts of the project live on their own branches / folders:
 
-```bash
-cd score_video_block
-python -m pip install -e ".[dev]"
-python -m pytest -q
-docker build -t pickleball-track .
-```
+| Branch | Folder | Content |
+| --- | --- | --- |
+| `training_model_custom` | `/data/Cuong/pickleball/pickleball_track` | training code of the custom models v3 / v4 / v5 |
+| `score-video` | `/data/Cuong/pickleball/pickleball_track_score_video` | FastAPI service scoring pickleball videos |

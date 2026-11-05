@@ -1,6 +1,6 @@
 """Rebuild the exact val/test splits used by the custom model (baseline v3/v4/v5).
 
-The custom benchmark (baseline/benchmark_common.py on branch baseline_shot1) uses:
+The custom benchmark (baseline/benchmark_common.py at commit c312d4b of pickleball_track) uses:
   * only the clean rows of the 1-1 mapping CSV (same filtering rules, same order),
   * 5 outer folds: StratifiedGroupKFold(shuffle=True, random_state=42) over game_id,
   * per fold, an inner validation split: the first split of
@@ -30,7 +30,7 @@ LABEL2ID = {"no_event": 0, "hit": 1, "miss": 2}           # same ids as the cust
 TO_VLM = {"hit": "made", "miss": "miss", "no_event": "no-event"}
 
 DATA = "/data/Cuong/pickleball/data/bendmark"
-ARTIFACTS = "/data/Cuong/pickleball/artifacts"
+BASELINE_DIR = "/data/Cuong/pickleball/pickleball_track/baseline"  # branch training_model_custom
 
 
 def load_clean_rows(mapping_csv, video_dir):
@@ -70,7 +70,7 @@ def main():
     ap.add_argument("--video-dir", default=f"{DATA}/train")
     ap.add_argument("--folds", type=int, default=5)
     ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument("--check-run", default=f"{ARTIFACTS}/baseline/v3/checkpoints_benchmark_1to1",
+    ap.add_argument("--check-run", default=f"{BASELINE_DIR}/basketball/outputs/runs/seed_42/v3",
                     help="custom-model output dir whose fold_k/result.json test_games are compared")
     ap.add_argument("--out", default="splits")
     args = ap.parse_args()
