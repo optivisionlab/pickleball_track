@@ -1,9 +1,15 @@
-checkpoints/
-weights/
+# Generated data, kept next to the code of each sport but never committed:
+# cache/ = frozen feature cache, outputs/ = checkpoints + results of the best configuration,
+# common/pretrained/ = BEATs checkpoints + unilm source and VideoMAE-base,
+# .pydeps/ = local copy of jmespath (see README.md).
+cache/
+outputs/
+logs/
+common/pretrained/
+.pydeps/
+
 *.pt
 *.pth
 *.safetensors
 __pycache__/
 *.pyc
-unilm/
-docker/logs/

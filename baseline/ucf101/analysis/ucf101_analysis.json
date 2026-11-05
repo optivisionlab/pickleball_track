@@ -1,0 +1,1150 @@
+{
+  "video_root": "/data/Cuong/pickleball/data/ucf101/UCF-101",
+  "videos_on_disk": 13320,
+  "unparsed_names": [],
+  "probe_errors": [],
+  "classes": 101,
+  "classes_on_disk": 101,
+  "groups": 25,
+  "clips_per_class": {
+    "mean": 131.881,
+    "min": 100.0,
+    "p5": 102.0,
+    "p25": 117.0,
+    "median": 131.0,
+    "p75": 145.0,
+    "p95": 163.0,
+    "max": 167.0
+  },
+  "clips_per_class_group": {
+    "mean": 5.275,
+    "min": 4.0,
+    "p5": 4.0,
+    "p25": 4.0,
+    "median": 5.0,
+    "p75": 7.0,
+    "p95": 7.0,
+    "max": 7.0
+  },
+  "duration_sec": {
+    "mean": 7.206,
+    "min": 1.068,
+    "p5": 2.84,
+    "p25": 4.4,
+    "median": 6.48,
+    "p75": 9.52,
+    "p95": 13.924,
+    "max": 71.04
+  },
+  "frames": {
+    "mean": 186.501,
+    "min": 29.0,
+    "p5": 73.0,
+    "p25": 113.0,
+    "median": 167.0,
+    "p75": 244.0,
+    "p95": 362.05,
+    "max": 1776.0
+  },
+  "clips_shorter_than_32_frames": 3,
+  "sampling_stride_for_32_frames": {
+    "mean": 5.828,
+    "min": 0.906,
+    "p5": 2.281,
+    "p25": 3.531,
+    "median": 5.219,
+    "p75": 7.625,
+    "p95": 11.314,
+    "max": 55.5
+  },
+  "fps": {
+    "25.0": 10810,
+    "29.97": 2502,
+    "29.917": 8
+  },
+  "resolution": {
+    "320x240": 13316,
+    "400x226": 4
+  },
+  "video_codec": {
+    "mpeg4": 13320
+  },
+  "audio": {
+    "with_audio_stream": 6837,
+    "audible(rms>0.001)": 6738,
+    "audio_codec": {
+      "mp3": 6837
+    },
+    "sample_rate": {
+      "44100": 6837
+    },
+    "rms_of_audible": {
+      "mean": 0.191,
+      "min": 0.001,
+      "p5": 0.041,
+      "p25": 0.119,
+      "median": 0.191,
+      "p75": 0.254,
+      "p95": 0.354,
+      "max": 0.565
+    },
+    "classes_mostly_audible": 51,
+    "classes_mostly_audible_list": [
+      "ApplyEyeMakeup",
+      "ApplyLipstick",
+      "Archery",
+      "BabyCrawling",
+      "BalanceBeam",
+      "BandMarching",
+      "BasketballDunk",
+      "BlowDryHair",
+      "BlowingCandles",
+      "BodyWeightSquats",
+      "Bowling",
+      "BoxingPunchingBag",
+      "BoxingSpeedBag",
+      "BrushingTeeth",
+      "CliffDiving",
+      "CricketBowling",
+      "CricketShot",
+      "CuttingInKitchen",
+      "FieldHockeyPenalty",
+      "FloorGymnastics",
+      "FrisbeeCatch",
+      "FrontCrawl",
+      "Haircut",
+      "Hammering",
+      "HammerThrow",
+      "HandstandPushups",
+      "HandstandWalking",
+      "HeadMassage",
+      "IceDancing",
+      "Knitting",
+      "LongJump",
+      "MoppingFloor",
+      "ParallelBars",
+      "PlayingCello",
+      "PlayingDaf",
+      "PlayingDhol",
+      "PlayingFlute",
+      "PlayingSitar",
+      "Rafting",
+      "ShavingBeard",
+      "Shotput",
+      "SkyDiving",
+      "SoccerPenalty",
+      "StillRings",
+      "SumoWrestling",
+      "Surfing",
+      "TableTennisShot",
+      "Typing",
+      "UnevenBars",
+      "WallPushups",
+      "WritingOnBoard"
+    ],
+    "classes_mixed_audio": [
+      "ApplyLipstick",
+      "Archery",
+      "BabyCrawling",
+      "BasketballDunk",
+      "BlowDryHair",
+      "BrushingTeeth",
+      "CricketBowling",
+      "CricketShot",
+      "FieldHockeyPenalty",
+      "FrontCrawl",
+      "HandstandPushups",
+      "HeadMassage",
+      "MoppingFloor",
+      "ParallelBars",
+      "Shotput",
+      "WallPushups"
+    ]
+  },
+  "splits": {
+    "split1": {
+      "train": 9537,
+      "test": 3783,
+      "train_missing_files": 0,
+      "test_missing_files": 0,
+      "train_groups": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25
+      ],
+      "test_groups": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "group_overlap": [],
+      "train_audible_frac": 0.5053,
+      "test_audible_frac": 0.5073,
+      "test_clips_per_class": {
+        "mean": 37.455,
+        "min": 28.0,
+        "p5": 28.0,
+        "p25": 33.0,
+        "median": 37.0,
+        "p75": 41.0,
+        "p95": 48.0,
+        "max": 49.0
+      },
+      "train_clips_per_class": {
+        "mean": 94.426,
+        "min": 72.0,
+        "p5": 73.0,
+        "p25": 83.0,
+        "median": 93.0,
+        "p75": 105.0,
+        "p95": 117.0,
+        "max": 121.0
+      }
+    },
+    "split2": {
+      "train": 9586,
+      "test": 3734,
+      "train_missing_files": 0,
+      "test_missing_files": 0,
+      "train_groups": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25
+      ],
+      "test_groups": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "group_overlap": [],
+      "train_audible_frac": 0.5066,
+      "test_audible_frac": 0.504,
+      "test_clips_per_class": {
+        "mean": 36.97,
+        "min": 28.0,
+        "p5": 28.0,
+        "p25": 33.0,
+        "median": 37.0,
+        "p75": 41.0,
+        "p95": 46.0,
+        "max": 49.0
+      },
+      "train_clips_per_class": {
+        "mean": 94.911,
+        "min": 72.0,
+        "p5": 74.0,
+        "p25": 84.0,
+        "median": 93.0,
+        "p75": 106.0,
+        "p95": 118.0,
+        "max": 122.0
+      }
+    },
+    "split3": {
+      "train": 9624,
+      "test": 3696,
+      "train_missing_files": 0,
+      "test_missing_files": 0,
+      "train_groups": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        22,
+        23,
+        24,
+        25
+      ],
+      "test_groups": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "group_overlap": [],
+      "train_audible_frac": 0.5062,
+      "test_audible_frac": 0.5049,
+      "test_clips_per_class": {
+        "mean": 36.594,
+        "min": 28.0,
+        "p5": 28.0,
+        "p25": 32.0,
+        "median": 36.0,
+        "p75": 42.0,
+        "p95": 46.0,
+        "max": 48.0
+      },
+      "train_clips_per_class": {
+        "mean": 95.287,
+        "min": 72.0,
+        "p5": 72.0,
+        "p25": 85.0,
+        "median": 95.0,
+        "p75": 106.0,
+        "p95": 118.0,
+        "max": 124.0
+      }
+    }
+  },
+  "per_class": {
+    "ApplyEyeMakeup": {
+      "label": 0,
+      "clips": 145,
+      "groups": 25,
+      "duration_median": 6.48,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "ApplyLipstick": {
+      "label": 1,
+      "clips": 114,
+      "groups": 25,
+      "duration_median": 6.24,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 0.921
+    },
+    "Archery": {
+      "label": 2,
+      "clips": 145,
+      "groups": 25,
+      "duration_median": 5.68,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 0.979
+    },
+    "BabyCrawling": {
+      "label": 3,
+      "clips": 132,
+      "groups": 25,
+      "duration_median": 6.58,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 0.955
+    },
+    "BalanceBeam": {
+      "label": 4,
+      "clips": 108,
+      "groups": 25,
+      "duration_median": 4.42,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "BandMarching": {
+      "label": 5,
+      "clips": 155,
+      "groups": 25,
+      "duration_median": 7.13,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "BaseballPitch": {
+      "label": 6,
+      "clips": 150,
+      "groups": 25,
+      "duration_median": 3.3,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "Basketball": {
+      "label": 7,
+      "clips": 134,
+      "groups": 25,
+      "duration_median": 4.0,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "BasketballDunk": {
+      "label": 8,
+      "clips": 131,
+      "groups": 25,
+      "duration_median": 2.88,
+      "audio_stream_frac": 0.969,
+      "audible_frac": 0.969
+    },
+    "BenchPress": {
+      "label": 9,
+      "clips": 160,
+      "groups": 25,
+      "duration_median": 3.92,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "Biking": {
+      "label": 10,
+      "clips": 134,
+      "groups": 25,
+      "duration_median": 6.91,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "Billiards": {
+      "label": 11,
+      "clips": 150,
+      "groups": 25,
+      "duration_median": 11.48,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "BlowDryHair": {
+      "label": 12,
+      "clips": 131,
+      "groups": 25,
+      "duration_median": 7.6,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 0.969
+    },
+    "BlowingCandles": {
+      "label": 13,
+      "clips": 109,
+      "groups": 25,
+      "duration_median": 3.68,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "BodyWeightSquats": {
+      "label": 14,
+      "clips": 112,
+      "groups": 25,
+      "duration_median": 4.6,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "Bowling": {
+      "label": 15,
+      "clips": 155,
+      "groups": 25,
+      "duration_median": 5.16,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "BoxingPunchingBag": {
+      "label": 16,
+      "clips": 163,
+      "groups": 25,
+      "duration_median": 6.92,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "BoxingSpeedBag": {
+      "label": 17,
+      "clips": 134,
+      "groups": 25,
+      "duration_median": 9.03,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "BreastStroke": {
+      "label": 18,
+      "clips": 101,
+      "groups": 25,
+      "duration_median": 6.32,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "BrushingTeeth": {
+      "label": 19,
+      "clips": 131,
+      "groups": 25,
+      "duration_median": 8.44,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 0.962
+    },
+    "CleanAndJerk": {
+      "label": 20,
+      "clips": 112,
+      "groups": 25,
+      "duration_median": 7.74,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "CliffDiving": {
+      "label": 21,
+      "clips": 138,
+      "groups": 25,
+      "duration_median": 3.54,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "CricketBowling": {
+      "label": 22,
+      "clips": 139,
+      "groups": 25,
+      "duration_median": 3.72,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 0.856
+    },
+    "CricketShot": {
+      "label": 23,
+      "clips": 167,
+      "groups": 25,
+      "duration_median": 3.64,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 0.994
+    },
+    "CuttingInKitchen": {
+      "label": 24,
+      "clips": 110,
+      "groups": 25,
+      "duration_median": 6.3,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "Diving": {
+      "label": 25,
+      "clips": 150,
+      "groups": 25,
+      "duration_median": 5.39,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "Drumming": {
+      "label": 26,
+      "clips": 161,
+      "groups": 25,
+      "duration_median": 12.0,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "Fencing": {
+      "label": 27,
+      "clips": 111,
+      "groups": 25,
+      "duration_median": 5.2,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "FieldHockeyPenalty": {
+      "label": 28,
+      "clips": 126,
+      "groups": 25,
+      "duration_median": 4.34,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 0.984
+    },
+    "FloorGymnastics": {
+      "label": 29,
+      "clips": 125,
+      "groups": 25,
+      "duration_median": 5.96,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "FrisbeeCatch": {
+      "label": 30,
+      "clips": 126,
+      "groups": 25,
+      "duration_median": 3.62,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "FrontCrawl": {
+      "label": 31,
+      "clips": 137,
+      "groups": 25,
+      "duration_median": 5.6,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 0.949
+    },
+    "GolfSwing": {
+      "label": 32,
+      "clips": 139,
+      "groups": 25,
+      "duration_median": 4.84,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "Haircut": {
+      "label": 33,
+      "clips": 130,
+      "groups": 25,
+      "duration_median": 6.04,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "Hammering": {
+      "label": 34,
+      "clips": 140,
+      "groups": 25,
+      "duration_median": 4.68,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "HammerThrow": {
+      "label": 35,
+      "clips": 150,
+      "groups": 25,
+      "duration_median": 6.92,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "HandstandPushups": {
+      "label": 36,
+      "clips": 128,
+      "groups": 25,
+      "duration_median": 4.42,
+      "audio_stream_frac": 0.969,
+      "audible_frac": 0.922
+    },
+    "HandstandWalking": {
+      "label": 37,
+      "clips": 111,
+      "groups": 25,
+      "duration_median": 5.6,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "HeadMassage": {
+      "label": 38,
+      "clips": 147,
+      "groups": 25,
+      "duration_median": 6.76,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 0.952
+    },
+    "HighJump": {
+      "label": 39,
+      "clips": 123,
+      "groups": 25,
+      "duration_median": 4.36,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "HorseRace": {
+      "label": 40,
+      "clips": 124,
+      "groups": 25,
+      "duration_median": 8.91,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "HorseRiding": {
+      "label": 41,
+      "clips": 164,
+      "groups": 25,
+      "duration_median": 6.34,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "HulaHoop": {
+      "label": 42,
+      "clips": 125,
+      "groups": 25,
+      "duration_median": 3.84,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "IceDancing": {
+      "label": 43,
+      "clips": 158,
+      "groups": 25,
+      "duration_median": 10.08,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "JavelinThrow": {
+      "label": 44,
+      "clips": 117,
+      "groups": 25,
+      "duration_median": 3.8,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "JugglingBalls": {
+      "label": 45,
+      "clips": 121,
+      "groups": 25,
+      "duration_median": 10.04,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "JumpingJack": {
+      "label": 46,
+      "clips": 123,
+      "groups": 25,
+      "duration_median": 2.84,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "JumpRope": {
+      "label": 47,
+      "clips": 144,
+      "groups": 25,
+      "duration_median": 15.3,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "Kayaking": {
+      "label": 48,
+      "clips": 141,
+      "groups": 25,
+      "duration_median": 7.24,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "Knitting": {
+      "label": 49,
+      "clips": 123,
+      "groups": 25,
+      "duration_median": 8.76,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "LongJump": {
+      "label": 50,
+      "clips": 131,
+      "groups": 25,
+      "duration_median": 5.41,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "Lunges": {
+      "label": 51,
+      "clips": 127,
+      "groups": 25,
+      "duration_median": 9.96,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "MilitaryParade": {
+      "label": 52,
+      "clips": 125,
+      "groups": 25,
+      "duration_median": 5.12,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "Mixing": {
+      "label": 53,
+      "clips": 136,
+      "groups": 25,
+      "duration_median": 4.52,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "MoppingFloor": {
+      "label": 54,
+      "clips": 110,
+      "groups": 25,
+      "duration_median": 7.74,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 0.918
+    },
+    "Nunchucks": {
+      "label": 55,
+      "clips": 132,
+      "groups": 25,
+      "duration_median": 9.72,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "ParallelBars": {
+      "label": 56,
+      "clips": 114,
+      "groups": 25,
+      "duration_median": 5.64,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 0.991
+    },
+    "PizzaTossing": {
+      "label": 57,
+      "clips": 113,
+      "groups": 25,
+      "duration_median": 4.8,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "PlayingCello": {
+      "label": 58,
+      "clips": 164,
+      "groups": 25,
+      "duration_median": 9.22,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "PlayingDaf": {
+      "label": 59,
+      "clips": 151,
+      "groups": 25,
+      "duration_median": 11.4,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "PlayingDhol": {
+      "label": 60,
+      "clips": 164,
+      "groups": 25,
+      "duration_median": 11.26,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "PlayingFlute": {
+      "label": 61,
+      "clips": 155,
+      "groups": 25,
+      "duration_median": 10.16,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "PlayingGuitar": {
+      "label": 62,
+      "clips": 160,
+      "groups": 25,
+      "duration_median": 10.0,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "PlayingPiano": {
+      "label": 63,
+      "clips": 105,
+      "groups": 25,
+      "duration_median": 7.27,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "PlayingSitar": {
+      "label": 64,
+      "clips": 157,
+      "groups": 25,
+      "duration_median": 16.44,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "PlayingTabla": {
+      "label": 65,
+      "clips": 111,
+      "groups": 25,
+      "duration_median": 10.8,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "PlayingViolin": {
+      "label": 66,
+      "clips": 100,
+      "groups": 25,
+      "duration_median": 7.04,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "PoleVault": {
+      "label": 67,
+      "clips": 149,
+      "groups": 25,
+      "duration_median": 5.51,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "PommelHorse": {
+      "label": 68,
+      "clips": 123,
+      "groups": 25,
+      "duration_median": 10.28,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "PullUps": {
+      "label": 69,
+      "clips": 100,
+      "groups": 25,
+      "duration_median": 4.6,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "Punch": {
+      "label": 70,
+      "clips": 160,
+      "groups": 25,
+      "duration_median": 12.0,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "PushUps": {
+      "label": 71,
+      "clips": 102,
+      "groups": 25,
+      "duration_median": 3.06,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "Rafting": {
+      "label": 72,
+      "clips": 111,
+      "groups": 25,
+      "duration_median": 7.92,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "RockClimbingIndoor": {
+      "label": 73,
+      "clips": 144,
+      "groups": 25,
+      "duration_median": 16.1,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "RopeClimbing": {
+      "label": 74,
+      "clips": 119,
+      "groups": 25,
+      "duration_median": 6.44,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "Rowing": {
+      "label": 75,
+      "clips": 137,
+      "groups": 25,
+      "duration_median": 12.16,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "SalsaSpin": {
+      "label": 76,
+      "clips": 133,
+      "groups": 25,
+      "duration_median": 6.72,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "ShavingBeard": {
+      "label": 77,
+      "clips": 161,
+      "groups": 25,
+      "duration_median": 8.28,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "Shotput": {
+      "label": 78,
+      "clips": 144,
+      "groups": 25,
+      "duration_median": 3.4,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 0.965
+    },
+    "SkateBoarding": {
+      "label": 79,
+      "clips": 120,
+      "groups": 25,
+      "duration_median": 5.08,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "Skiing": {
+      "label": 80,
+      "clips": 135,
+      "groups": 25,
+      "duration_median": 8.12,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "Skijet": {
+      "label": 81,
+      "clips": 100,
+      "groups": 25,
+      "duration_median": 7.01,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "SkyDiving": {
+      "label": 82,
+      "clips": 110,
+      "groups": 25,
+      "duration_median": 7.84,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "SoccerJuggling": {
+      "label": 83,
+      "clips": 147,
+      "groups": 25,
+      "duration_median": 8.38,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "SoccerPenalty": {
+      "label": 84,
+      "clips": 137,
+      "groups": 25,
+      "duration_median": 3.64,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "StillRings": {
+      "label": 85,
+      "clips": 112,
+      "groups": 25,
+      "duration_median": 6.34,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "SumoWrestling": {
+      "label": 86,
+      "clips": 116,
+      "groups": 25,
+      "duration_median": 8.54,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "Surfing": {
+      "label": 87,
+      "clips": 126,
+      "groups": 25,
+      "duration_median": 8.4,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "Swing": {
+      "label": 88,
+      "clips": 131,
+      "groups": 25,
+      "duration_median": 6.04,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "TableTennisShot": {
+      "label": 89,
+      "clips": 140,
+      "groups": 25,
+      "duration_median": 6.47,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "TaiChi": {
+      "label": 90,
+      "clips": 100,
+      "groups": 25,
+      "duration_median": 7.04,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "TennisSwing": {
+      "label": 91,
+      "clips": 166,
+      "groups": 25,
+      "duration_median": 4.79,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "ThrowDiscus": {
+      "label": 92,
+      "clips": 130,
+      "groups": 25,
+      "duration_median": 3.74,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "TrampolineJumping": {
+      "label": 93,
+      "clips": 119,
+      "groups": 25,
+      "duration_median": 6.71,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "Typing": {
+      "label": 94,
+      "clips": 136,
+      "groups": 25,
+      "duration_median": 9.0,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "UnevenBars": {
+      "label": 95,
+      "clips": 104,
+      "groups": 25,
+      "duration_median": 5.82,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "VolleyballSpiking": {
+      "label": 96,
+      "clips": 116,
+      "groups": 25,
+      "duration_median": 3.47,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "WalkingWithDog": {
+      "label": 97,
+      "clips": 123,
+      "groups": 25,
+      "duration_median": 8.01,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    },
+    "WallPushups": {
+      "label": 98,
+      "clips": 130,
+      "groups": 25,
+      "duration_median": 4.34,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 0.892
+    },
+    "WritingOnBoard": {
+      "label": 99,
+      "clips": 152,
+      "groups": 25,
+      "duration_median": 5.88,
+      "audio_stream_frac": 1.0,
+      "audible_frac": 1.0
+    },
+    "YoYo": {
+      "label": 100,
+      "clips": 128,
+      "groups": 25,
+      "duration_median": 7.28,
+      "audio_stream_frac": 0.0,
+      "audible_frac": 0.0
+    }
+  }
+}
