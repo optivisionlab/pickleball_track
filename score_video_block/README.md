@@ -251,8 +251,8 @@ Command-line inference on a local file (writes `<video>.inference.json`):
 ```bash
 python scripts/infer_video.py --video match.mp4 [--checkpoint pickleball_v4.pt --event-threshold 0.5 --min-event-tokens 3 --smooth-tokens 1 --peak]
 
-# Pack a new training run (baseline/run_pickleball.sh) for the service:
-python scripts/export_checkpoint.py --run-dir /data/Cuong/pickleball/artifacts/weights_pickleball/v4 \
+# Pack a new training run (baseline/pickleball/run.sh (branch training_model_custom)) for the service:
+python scripts/export_checkpoint.py --run-dir /data/Cuong/pickleball/pickleball_track/baseline/pickleball/outputs/runs/v4 \
     --output src/weights/pickleball_v4.pt
 ```
 

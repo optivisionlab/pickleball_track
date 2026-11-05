@@ -1,6 +1,6 @@
 """Pack a v4 cross-validation run into the single checkpoint the service loads.
 
-Reads every ``fold_<k>/best.pt`` written by ``baseline/run_pickleball.sh`` (model
+Reads every ``fold_<k>/best.pt`` written by ``baseline/pickleball/run.sh (branch training_model_custom)`` (model
 state_dict + that fold's feature mean/std), encodes the class descriptions with
 CLIP exactly as training does (``pickleball_common.encode_class_prompts``), and
 writes ``{"folds": [...], "class_text": [3, 512], "config": {...}}``. The service
@@ -9,7 +9,7 @@ then needs neither the training code nor CLIP.
 Run it in the training environment:
 
     python scripts/export_checkpoint.py \\
-        --run-dir /data/Cuong/pickleball/artifacts/weights_pickleball/v4 \\
+        --run-dir /data/Cuong/pickleball/pickleball_track/baseline/pickleball/outputs/runs/v4 \\
         --output src/weights/pickleball_v4.pt
 """
 
@@ -22,8 +22,8 @@ from pathlib import Path
 
 import torch
 
-DEFAULT_BASELINE = "/data/Cuong/pickleball/pickleball_track/baseline"
-DEFAULT_RUN = "/data/Cuong/pickleball/artifacts/weights_pickleball/v4"
+DEFAULT_BASELINE = "/data/Cuong/pickleball/pickleball_track/baseline/pickleball"
+DEFAULT_RUN = "/data/Cuong/pickleball/pickleball_track/baseline/pickleball/outputs/runs/v4"
 # Training arguments the served model and preprocessing depend on.
 CONFIG_KEYS = ("fusion_dim", "heads", "temporal_layers", "dropout", "seq_tokens", "spatial",
                "videomae", "clip", "video_norm", "event_radius", "min_event_tokens")
